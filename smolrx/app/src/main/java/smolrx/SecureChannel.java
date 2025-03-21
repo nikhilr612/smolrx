@@ -4,8 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -15,8 +17,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.zip.DeflaterInputStream;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+import java.util.zip.InflaterOutputStream;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -36,6 +40,7 @@ public class SecureChannel implements Closeable {
     private static final String SYM_ALGORITHM = "AES";
     private static final String ALGORITHM_TRANSFORMATION = "RSA/ECB/PKCS1Padding";
     private static final String SYM_ALGORIHTM_TRANSFORMATION = "AES/ECB/PKCS5Padding";
+    private static final int BUFFER_SIZE = 1024; // < 32767
 
     private Cipher symCipher; // TODO Compare re-initialization vs two ciphers.
     private Socket conn;
@@ -100,6 +105,64 @@ public class SecureChannel implements Closeable {
         ois.close();
     
         return ret;
+    }
+
+    /**
+     * Send data from the input stream over the channel using chunks of BUFFER_SIZE.
+     * @param inputStream The input stream to read data from and send.
+     * @throws IOException If writing to underlying socket failed.
+     * @throws InvalidKeyException If Cipher re-initialization failed.
+     * @throws IllegalBlockSizeException If Cipher operation failed.
+     * @throws BadPaddingException If Cipher operation failed.
+     */
+    public void sendStream(InputStream inputStream) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        DeflaterInputStream deflateis = new DeflaterInputStream(inputStream);
+        var buffer = new byte[SecureChannel.BUFFER_SIZE];
+        var lenBuffer = ByteBuffer.allocate(2);
+        int len = 0;
+
+        this.symCipher.init(Cipher.ENCRYPT_MODE, this.secretKey);
+        
+        while ((len = deflateis.read(buffer)) != 0) {
+            var encData = this.symCipher.doFinal(buffer, 0, len);
+
+            lenBuffer.clear();
+            lenBuffer.putShort((short) encData.length);
+            this.conn.getOutputStream().write(lenBuffer.array());
+            this.conn.getOutputStream().write(encData);
+        }
+
+        // Send FIN 0x00_00.
+        lenBuffer.clear(); lenBuffer.putShort((short)0);
+        this.conn.getOutputStream().write(lenBuffer.array());
+
+    }
+
+    /**
+     * Read a stream sent over the channel and write to the provided output stream.
+     * @param outputStream The output stream to write data being read to.
+     * @throws IOException If any errors occur while reading from the socket.
+     * @throws InvalidKeyException If Cipher re-initialization failed.
+     * @throws IllegalBlockSizeException If Cipher operation failed.
+     * @throws BadPaddingException If Cipher operation failed.
+     */
+    public void readStream(OutputStream outputStream) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        InflaterOutputStream inflateos = new InflaterOutputStream(outputStream);
+        var encDataBuf = new byte[SecureChannel.BUFFER_SIZE * 2]; // Over-allocate to avoid dealing with padding shenanigans.
+        var lenBuffer = ByteBuffer.allocate(2);
+        this.conn.getInputStream().read(lenBuffer.array());
+        int encLen = lenBuffer.getShort();
+
+        this.symCipher.init(Cipher.DECRYPT_MODE, this.secretKey);
+            
+        while (encLen != 0) {
+            this.conn.getInputStream().read(encDataBuf, 0, encLen);
+            var buffer = this.symCipher.doFinal(encDataBuf, 0, encLen);
+            inflateos.write(buffer);
+
+            this.conn.getInputStream().read(lenBuffer.array());
+            encLen = lenBuffer.getShort();
+        }
     }
     
     /**
