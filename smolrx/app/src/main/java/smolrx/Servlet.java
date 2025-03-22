@@ -1,5 +1,7 @@
 package smolrx;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.InvalidKeyException;
@@ -52,6 +54,10 @@ public class Servlet implements Runnable {
 
         try {
             this.channel.sendObject("Hello!");
+            var f = new File("test.txt"); // Send file to test channel.
+            var fis = new FileInputStream(f);
+            this.channel.sendStream(fis);
+            fis.close();
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
             Servlet.LOGGER.warning("Failed to send object message.");
             e.printStackTrace();

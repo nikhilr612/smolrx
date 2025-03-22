@@ -123,7 +123,7 @@ public class SecureChannel implements Closeable {
 
         this.symCipher.init(Cipher.ENCRYPT_MODE, this.secretKey);
         
-        while ((len = deflateis.read(buffer)) != 0) {
+        while ((len = deflateis.read(buffer)) != -1) {
             var encData = this.symCipher.doFinal(buffer, 0, len);
 
             lenBuffer.clear();
@@ -160,6 +160,7 @@ public class SecureChannel implements Closeable {
             var buffer = this.symCipher.doFinal(encDataBuf, 0, encLen);
             inflateos.write(buffer);
 
+            lenBuffer.clear();
             this.conn.getInputStream().read(lenBuffer.array());
             encLen = lenBuffer.getShort();
         }

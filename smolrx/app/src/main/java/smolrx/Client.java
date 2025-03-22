@@ -60,6 +60,7 @@ public class Client implements Runnable {
 
         try {
             System.out.println(channel.readObject());
+            channel.readStream(System.out);
         } catch (InvalidKeyException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException
                 | IOException e) {
             Client.LOGGER.warning("Failed to read object from server.");
