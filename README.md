@@ -1,6 +1,6 @@
 # SmolRX
 
-**SmolRX** is a Java-based remote execution network app and protocl for secure and effective distributed job processing.
+**SmolRX** is a Java-based remote execution network app and protocol for secure and effective distributed job processing.
 
 ## Features
 - **Remote Job Execution**: Server assigns jobs; clients execute them locally.
