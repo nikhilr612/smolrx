@@ -1,0 +1,29 @@
+package smolrx.storage;
+
+import java.io.IOException;
+
+import smolrx.msg.InspectResult;
+import smolrx.msg.PushResult;
+
+/**
+ * Abstract over mechanisms to store and retrieve the result data sent by clients.
+ */
+public abstract class ObjectStorage {
+    /**
+     * For a given request to inspect results, return the results stored thus far.
+     * Precondition: The request should be authorized and valid.
+     * @param iResult The request to inspect results.
+     * @return The list of objects corresponding to the results.
+     * @throws IOException 
+     * @throws ClassNotFoundException 
+     */
+    abstract Object[] getResults(InspectResult iResult) throws IOException, ClassNotFoundException;
+
+    /**
+     * Store a result
+     * Precondition: The operation should be authorized and valid.
+     * @param pResult The result to store.
+     * @throws IOException 
+     */
+    abstract void putResult(PushResult pResult) throws IOException;
+}

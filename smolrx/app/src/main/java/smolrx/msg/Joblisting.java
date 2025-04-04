@@ -1,0 +1,36 @@
+package smolrx.msg;
+
+import java.util.ArrayList;
+import java.util.Optional;
+
+import smolrx.jobs.JobInfo;
+import smolrx.jobs.JobMetadata;
+
+public final class Joblisting extends ServerMessage {
+    ArrayList<Long> jobIDs;
+    ArrayList<JobInfo> jobInfos;
+    Optional<ArrayList<JobMetadata>> jobMeta;
+
+    /**
+     * Create a new job listing with the specified jobs and their meta data.
+     * @param jobIDs
+     * @param jobInfos
+     * @param meta
+     */
+    public Joblisting(ArrayList<Long> jobIDs, ArrayList<JobInfo> jobInfos, ArrayList<JobMetadata> meta) {
+        this.jobIDs = jobIDs;
+        this.jobInfos = jobInfos;
+        this.jobMeta = Optional.of(meta);
+    }
+
+    /**
+     * Create a new job listing with the specified jobs and without their meta data.
+     * @param jobIDs
+     * @param jobInfos
+     */
+    public Joblisting(ArrayList<Long> jobIDs, ArrayList<JobInfo> jobInfos) {
+        this.jobIDs = jobIDs;
+        this.jobInfos = jobInfos;
+        this.jobMeta = Optional.empty();
+    }
+}
