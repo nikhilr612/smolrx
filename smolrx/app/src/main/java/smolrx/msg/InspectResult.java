@@ -1,5 +1,16 @@
 package smolrx.msg;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+
+import smolrx.RXException;
+import smolrx.SecureChannel;
+import smolrx.jobs.JobManager;
+import smolrx.storage.ObjectStorage;
+
 public final class InspectResult extends ClientMessage {
     /**
      * The job ID whose result is requested.
@@ -20,6 +31,13 @@ public final class InspectResult extends ClientMessage {
      * Limit the result objects sent over channel to this number, in case of redundancies.
      */
     int limit;
+
+    public InspectResult(long forJobId, long parentJobId, String roleKey, int limit) {
+        this.forJobId = forJobId;
+        this.parentJobId = parentJobId;
+        this.roleKey = roleKey;
+        this.limit = limit;
+    }
     
     public int getLimit() {
         return limit;
@@ -35,5 +53,16 @@ public final class InspectResult extends ClientMessage {
 
     public long getParentJobId() {
         return parentJobId;
+    }
+
+    @Override
+    public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
+        jobManager.validateInspection(this);
+        try {
+            var results = objectStorage.getResults(this);
+            channel.sendObject(results);
+        } catch (ClassNotFoundException | IOException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new RXException("Failed to fetch and send results from object storage", e);
+        }
     }
 }

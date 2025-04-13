@@ -1,9 +1,9 @@
 package smolrx.jobs;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Optional;
 
 /**
  * Data-class that maintains instance-specific information about a program to be executed.
@@ -43,8 +43,15 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
      * Jobs that must be completed before allowing admission of any results of this job.
      */
     HashSet<Long> prerequisite_jobs;
+    
+    /**
+     * A URI/Link pointing to the executable JAR required for this job.
+     * If link is non-null, then the Client must fetch the JAR specified by the link.
+     * The client must treat the file sent in response to JarRequest as file metadata, and verify it with the fetched file.
+     */
+    Optional<String> link;
 
-    private JobInfo() {}
+    JobInfo() {}
 
     /**
      * Clone and remove unnecessary information.
@@ -55,7 +62,9 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
     
         jinfo.redundancy_count = 0;
         jinfo.jobData = null;
-        jinfo.programId = -1;
+
+        jinfo.programId = this.programId; // Keep programId for client cache.
+        jinfo.link = this.link; // Keep link for client cache.
 
         jinfo.prerequisite_jobs = this.prerequisite_jobs;
         jinfo.type = this.type;
@@ -72,5 +81,21 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
             return 1;
         }
         return 0;
+    }
+
+    public Optional<String> getLink() {
+        return link;
+    }
+
+    public JobType getType() {
+        return type;
+    }
+
+    public HashMap<String, String> getProperties() {
+        return properties;
+    }
+
+    public HashSet<Long> getPrerequisiteJobs() {
+        return prerequisite_jobs;
     }
 }

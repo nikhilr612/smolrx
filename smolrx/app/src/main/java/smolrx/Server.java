@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.logging.Logger;
 
+import smolrx.jobs.JobManager;
+import smolrx.storage.ObjectStorage;
+
 public class Server extends Thread {
 
     /**
@@ -17,6 +20,16 @@ public class Server extends Thread {
     private boolean alive;
 
     /**
+     * The server's Job manager.
+     */
+    private JobManager jobManager;
+
+    /**
+     * Object storage responsible for storing pushed results.
+     */
+    private ObjectStorage storage;
+
+    /**
      * Logger for servers.
      */
     public static Logger LOGGER = Logger.getLogger("smolrx-server");
@@ -27,7 +40,7 @@ public class Server extends Thread {
      * @param backlong Maximum number of client connections to queue.
      * @throws IOException If the underlying ServerSocket could not be acquired.
      */
-    public Server(int port, int backlong) throws IOException {
+    public Server(int port, int backlong, JobManager manager, ObjectStorage storage) throws IOException {
         this.serverSocket = new ServerSocket(port, port);
         this.alive = true;
     }
@@ -46,7 +59,7 @@ public class Server extends Thread {
                 Server.LOGGER.fine("Listening for clients at: " + serverSocket.toString());
                 var clientConnSocket = this.serverSocket.accept();
                 LOGGER.info("Received connection from " + clientConnSocket.getInetAddress());
-                var servlet = new Servlet(clientConnSocket);
+                var servlet = new Servlet(clientConnSocket, jobManager, storage);
                 Thread.ofVirtual().start(servlet); // Start virtual thread.
             } catch (IOException e) {
                 Server.LOGGER.warning("Failed to accept client connection. Error occurred while blocking.");

@@ -35,6 +35,8 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class SecureChannel implements Closeable {
 
+    // TODO: Re-factor all methods to use `ChannelException` and group channel-related errors into one. This will reduce try-catch gore.
+
     private static final int KEYSIZE_B = 256;
     private static final String ALGORITHM = "RSA"; // Ideally "X25519". RSA for now.
     private static final String SYM_ALGORITHM = "AES";
@@ -42,7 +44,7 @@ public class SecureChannel implements Closeable {
     private static final String SYM_ALGORIHTM_TRANSFORMATION = "AES/ECB/PKCS5Padding";
     private static final int BUFFER_SIZE = 1024; // < 32767
 
-    private Cipher symCipher; // TODO Compare re-initialization vs two ciphers.
+    private Cipher symCipher; // TODO: Compare re-initialization vs two ciphers.
     private Socket conn;
     private SecretKey secretKey;
 
@@ -241,5 +243,10 @@ public class SecureChannel implements Closeable {
     @Override
     public void close() throws IOException {
         this.conn.close();
+    }
+
+    @Override
+    public String toString() {
+        return "SecureChannel[" + this.conn.toString() + "]";
     }
 }

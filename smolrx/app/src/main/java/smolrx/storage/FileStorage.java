@@ -27,13 +27,13 @@ public class FileStorage extends ObjectStorage {
     }
 
     @Override
-    Object[] getResults(InspectResult iResult) throws IOException, ClassNotFoundException {
+    public Object[] getResults(InspectResult iResult) throws IOException, ClassNotFoundException {
         var jobDirectory = new File(this.baseDirectory, "J" + iResult.getJobId() + File.pathSeparator);
         if (!jobDirectory.exists()) return null;
         var files = jobDirectory.listFiles();
         var len = Integer.min(files.length, iResult.getLimit());
         var ret = new Object[len];
-        for (int i = 0; i < ret.length; i++) {
+        for (int i = 0; i < len; i++) {
             var tfis = new FileInputStream(files[i]);
             var ois = new ObjectInputStream(tfis);
             ret[i] = ois.readObject();
@@ -43,7 +43,7 @@ public class FileStorage extends ObjectStorage {
     }
 
     @Override
-    void putResult(PushResult pResult) throws IOException {
+    public void putResult(PushResult pResult) throws IOException {
         var jobDirectory = new File(this.baseDirectory, "J" + pResult.getJobId() + File.pathSeparator);
         if (!jobDirectory.exists()) jobDirectory.mkdirs();
         var file = File.createTempFile("smrx_", null, jobDirectory);

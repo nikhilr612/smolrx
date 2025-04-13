@@ -113,7 +113,7 @@ public class JobManager {
      * @return The Entry with Jar path as key, and Serializable input as value.
      * @throws RXException if request Job ID is invalid, role is incompatible, or pre-requisite jobs have not finished.
      */
-    public AbstractMap.SimpleEntry<String,Serializable> fetchJobInfo(JarRequest jarRequest) throws RXException {
+    public AbstractMap.SimpleEntry<String,Serializable> fetchJobInfoPair(JarRequest jarRequest) throws RXException {
         var jobInfo = this.jobInfo.get(jarRequest.getJobId());
         if (jobInfo == null) throw new RXException("No pending job with id: " + jarRequest.getJobId());
         var suitable = this.suitableJobType(jarRequest.getRoleKey());

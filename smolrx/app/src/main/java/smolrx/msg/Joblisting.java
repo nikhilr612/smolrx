@@ -33,4 +33,20 @@ public final class Joblisting extends ServerMessage {
         this.jobInfos = jobInfos;
         this.jobMeta = Optional.empty();
     }
+
+    public ArrayList<Long> getJobIDs() {
+        return jobIDs;
+    }
+
+    public ArrayList<JobInfo> getJobInfos() {
+        return jobInfos;
+    }
+
+    public Optional<ArrayList<JobMetadata>> getJobMeta() {
+        return jobMeta;
+    }
+
+    public boolean hasMeta() {
+        return jobMeta.isPresent();
+    }
 }

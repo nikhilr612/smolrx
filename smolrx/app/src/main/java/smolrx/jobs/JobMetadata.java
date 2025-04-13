@@ -7,11 +7,15 @@ public class JobMetadata {
     /**
      * The number of times an aggregator has requested the result(s) of this job.
      */
-    int inspect_count;
+    int inspect_count = 0;
 
     /**
      * The number of times the job has been completed.
      */
-    int completion_count;
+    int completion_count = 0;
+
+    public JobMetadata() {
+        // Default constructor.
+    }
 
 }

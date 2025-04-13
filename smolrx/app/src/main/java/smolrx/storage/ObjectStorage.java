@@ -17,7 +17,7 @@ public abstract class ObjectStorage {
      * @throws IOException 
      * @throws ClassNotFoundException 
      */
-    abstract Object[] getResults(InspectResult iResult) throws IOException, ClassNotFoundException;
+    public abstract Object[] getResults(InspectResult iResult) throws IOException, ClassNotFoundException;
 
     /**
      * Store a result
@@ -25,5 +25,5 @@ public abstract class ObjectStorage {
      * @param pResult The result to store.
      * @throws IOException 
      */
-    abstract void putResult(PushResult pResult) throws IOException;
+    public abstract void putResult(PushResult pResult) throws IOException;
 }
