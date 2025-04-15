@@ -2,6 +2,7 @@ package smolrx.storage;
 
 import java.io.IOException;
 
+import smolrx.msg.BulkPush;
 import smolrx.msg.InspectResult;
 import smolrx.msg.PushResult;
 
@@ -26,4 +27,18 @@ public abstract class ObjectStorage {
      * @throws IOException 
      */
     public abstract void putResult(PushResult pResult) throws IOException;
+
+    /**
+     * Store multiple results in bulk.
+     * Precondition: The operation should be authorized and valid.
+     * @param bulkPush The bulk push request containing the results to store.
+     * @throws IOException 
+     */
+    public void putResultsBulk(BulkPush bulkPush) throws IOException {
+        for (var entry : bulkPush.getResults()) {
+            var jobId = entry.getKey();
+            var result = entry.getValue();
+            putResult(new PushResult(jobId, bulkPush.getRoleKey(), result));
+        }
+    }
 }

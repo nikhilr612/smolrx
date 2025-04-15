@@ -13,6 +13,28 @@ public class JobManagerBuilder {
     private final HashMap<String, JobType> keyMap = new HashMap<>();
     private boolean admitAnySlogger = false;
     private boolean forceRedundance = false;
+    private int bulkReqLimit = 100;
+    private int bulkPushLimit = 100;
+
+    /**
+     * Set the limit for bulk requests.
+     * @param limit The maximum number of job inputs to request in bulk.
+     * @return The current instance of JobManagerBuilder for method chaining.
+     */
+    public JobManagerBuilder setBulkReqLimit(int limit) {
+        this.bulkReqLimit = limit;
+        return this;
+    }
+
+    /**
+     * Set the limit for bulk pushes. This limit should be set carefully, since the JobManager is locked for the duration of a Bulk Push operation.
+     * @param limit The maximum number of job inputs to push in bulk.
+     * @return The current instance of JobManagerBuilder for method chaining.
+     */
+    public JobManagerBuilder setBulkPushLimit(int limit) {
+        this.bulkPushLimit = limit;
+        return this;
+    }
 
     /**
      * Add a job to the job manager.

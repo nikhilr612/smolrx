@@ -16,7 +16,14 @@ public class App {
     // TODO: Move to test.
 
     private static JobManager setupJobs() {
-        var jmBuilder = new JobManagerBuilder().allowAnySlogger().addJar(1, "./testjars/bfcarm.jar");
+        var jmBuilder = new JobManagerBuilder()
+            .allowAnySlogger()
+            .setBulkPushLimit(100)
+            .setBulkReqLimit(100)
+            .withKey("private", JobType.COLLECT)
+            .addJar(1, "./testjars/bfcarm.jar");
+
+        // Add mappers.
         for (int i = 1; i <= 1000; i++) {
             var job = new JobBuilder(i, 1, JobType.SLOG)
                 .setJobData(i) // input is the number to test
@@ -25,6 +32,8 @@ public class App {
                 .build();
             jmBuilder.addJob(i, job);
         }
+
+        // Add reducers
         for (int i = 0; i < 10; i++) {
             var jb = new JobBuilder(1000+i, 1, JobType.COLLECT);
             for (int j = 1; j <= 100; j++) {
@@ -33,6 +42,7 @@ public class App {
             var job = jb.setProperty("Xclass", "bfcarm.Count").build();
             jmBuilder.addJob(1000+i, job);
         }
+
         return jmBuilder.build();
     }
 

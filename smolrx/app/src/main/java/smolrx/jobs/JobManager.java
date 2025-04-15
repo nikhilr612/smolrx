@@ -11,6 +11,7 @@ import java.util.logging.Level;
 import smolrx.RXException;
 import smolrx.Servlet;
 import smolrx.msg.BulkInputs;
+import smolrx.msg.BulkPush;
 import smolrx.msg.InputRequest;
 import smolrx.msg.InspectResult;
 import smolrx.msg.JarRequest;
@@ -146,15 +147,33 @@ public class JobManager {
     public void registerJobResult(PushResult pushResult) throws RXException {
         var jobtype = this.suitableJobType(pushResult.getRoleKey());
         synchronized(jobMetas) {
-            var jobMeta = this.jobMetas.get(pushResult.getJobId());
-            if (jobMeta == null) throw new RXException("No scheduled job with id: " + pushResult.getJobId());
-            var jobInfo = this.jobInfo.get(pushResult.getJobId());
-            if (jobInfo == null) throw new RXException("Redundant result.");
-            if (jobtype != jobInfo.type) throw new RXException("Client ill-suited to the job.");
-            jobMeta.completion_count += 1;
-            if (jobInfo.redundancy_count == jobMeta.completion_count) {
-                this.jobInfo.remove(pushResult.getJobId());
+            _registerJobResultInner(pushResult.getJobId(), jobtype);
+        }
+    }
+
+    /**
+     * Register the completion of jobs in the bulk result. This DOES NOT save the result.
+     * @param pushResult The Bulk result information.
+     * @throws RXException If the role key is invalid, or a job was already completed with required redundancy, or client is ill-suited to a job.
+     */
+    public void registerJobResults(BulkPush pushResult) throws RXException {
+        var jobtype = this.suitableJobType(pushResult.getRoleKey());
+        synchronized(jobMetas) {
+            for (var job_id : pushResult.getJobs()) {
+                _registerJobResultInner(job_id, jobtype);
             }
+        }
+    }
+
+    private void _registerJobResultInner(long job_id, JobType suitable) throws RXException {
+        var jobMeta = this.jobMetas.get(job_id);
+        if (jobMeta == null) throw new RXException("No scheduled job with id: " + job_id);
+        var jobInfo = this.jobInfo.get(job_id);
+        if (jobInfo == null) throw new RXException("Redundant result.");
+        if (suitable != jobInfo.type) throw new RXException("Client ill-suited to the job.");
+        jobMeta.completion_count += 1;
+        if (jobInfo.redundancy_count == jobMeta.completion_count) {
+            this.jobInfo.remove(job_id);
         }
     }
 
