@@ -4,12 +4,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.util.logging.Level;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
 import smolrx.RXException;
 import smolrx.SecureChannel;
+import smolrx.Servlet;
 import smolrx.jobs.JobManager;
 import smolrx.storage.ObjectStorage;
 
@@ -61,6 +63,7 @@ public final class JarRequest extends ClientMessage {
         try {
             channel.sendObject(programInput);
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+            Servlet.LOGGER.log(Level.WARNING, "Failed to send program input", e);
             throw new RXException("Failed to send program input", e);
         }
 
@@ -71,10 +74,14 @@ public final class JarRequest extends ClientMessage {
         try (FileInputStream fis = new FileInputStream(jarPath)) {
             channel.sendStream(fis);
         } catch (FileNotFoundException e) {
+            Servlet.LOGGER.log(Level.SEVERE, "Jar file not found: " + jarPath, e);
             throw new RXException("Could not find local Jar file", e);
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e1) {
+            Servlet.LOGGER.log(Level.SEVERE, "Failed to send jar file: " + jarPath, e1);
             throw new RXException("Failed to stream file.", e1);
         }
+
+        Servlet.LOGGER.log(Level.INFO, "Sent jar file: " + jarPath + " to client: " + channel.toString());
 
     }
 }

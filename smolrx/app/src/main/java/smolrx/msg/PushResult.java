@@ -42,6 +42,15 @@ public final class PushResult extends ClientMessage {
     }
 
     @Override
+    public String toString() {
+        return "PushResult{" +
+                "roleKey='" + roleKey + '\'' +
+                ", job_id=" + job_id +
+                ", resultObject={" + resultObject.toString() +
+                "}}";
+    }
+
+    @Override
     public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
         jobManager.registerJobResult(this);
         try {

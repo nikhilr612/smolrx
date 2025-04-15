@@ -91,16 +91,26 @@ public class SimpleClient implements Runnable {
             var jobId = jobl.getJobIDs().get(0);
             var jobInfo = jobl.getJobInfos().get(0);
             
+            SimpleClient.LOGGER.info("Job ID: " + jobId + ", Job Type: " + jobInfo.getType());
+            SimpleClient.LOGGER.fine("Requesting jar file for job ID: " + jobId);
+
             var jarreq = new JarRequest(jobId, this.roleKey);
             channel.sendObject(jarreq);
 
+            SimpleClient.LOGGER.info("Jar file requested. Waiting for jar file.");
+
             var programInput = channel.readObject();
+
+            SimpleClient.LOGGER.info("Received program input: " + programInput.toString() + " . Creating temporary file.");
+
             var tmpf = File.createTempFile("smolrx", ".jar");
             tmpf.deleteOnExit();
 
             FileOutputStream fos = new FileOutputStream(tmpf);
             channel.readStream(fos);
             fos.close();
+
+            SimpleClient.LOGGER.info("Read jar file.");
 
             var className = jobInfo.getProperties().getOrDefault("Xclass", "Main");
 
@@ -110,17 +120,20 @@ public class SimpleClient implements Runnable {
                 case COLLECT:
                     var pRResult = handle_reducer_job(channel, tmpf, programInput, className, jobInfo.getPrerequisiteJobs(), jobId);
                     channel.sendObject(pRResult);
+                    SimpleClient.LOGGER.info("Sending result: " + pRResult.toString());
                     break;
                 case SLOG:
+                    SimpleClient.LOGGER.info("Starting slog job.");
                     var pResult = handle_slog_job(tmpf, programInput, className, jobId);
+                    SimpleClient.LOGGER.info("Sending result: " + pResult.toString());
                     channel.sendObject(pResult);
                     break;
             }
 
         } catch (IOException e) {
-            SimpleClient.LOGGER.log(Level.WARNING, "Failed to send object to server.", e);
+            SimpleClient.LOGGER.log(Level.SEVERE, "Failed to send object to server.", e);
         } catch (InvalidKeyException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException e) {
-            SimpleClient.LOGGER.log(Level.WARNING, "Failed to read object from server.", e);
+            SimpleClient.LOGGER.log(Level.SEVERE, "Failed to read object from server.", e);
         }
 
         try {

@@ -2,7 +2,6 @@ package smolrx.msg;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
-import java.util.Optional;
 import java.util.logging.Level;
 
 import javax.crypto.BadPaddingException;
@@ -60,6 +59,7 @@ public final class JobRequest extends ClientMessage {
     public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
         try {
             channel.sendObject(jobManager.listJobs(this));
+            Servlet.LOGGER.log(Level.INFO, "Sent job listing to client: " + channel.toString());
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | RXException e) {
             Servlet.LOGGER.log(Level.WARNING, "Failed to send job listing to client: " + channel.toString(), e);
             throw new RXException("Failed to send job listing.", e);

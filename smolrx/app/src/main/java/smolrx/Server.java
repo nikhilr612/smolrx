@@ -62,7 +62,7 @@ public class Server extends Thread {
                 var clientConnSocket = this.serverSocket.accept();
                 LOGGER.info("Received connection from " + clientConnSocket.getInetAddress());
                 var servlet = new Servlet(clientConnSocket, jobManager, storage);
-                Thread.ofVirtual().start(servlet); // Start virtual thread.
+                Thread.ofVirtual().name("smolrx-servlet").start(servlet); // Start virtual thread.
             } catch (IOException e) {
                 Server.LOGGER.warning("Failed to accept client connection. Error occurred while blocking.");
                 e.printStackTrace();
