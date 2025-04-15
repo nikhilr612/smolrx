@@ -13,6 +13,7 @@ import javax.crypto.NoSuchPaddingException;
 
 import smolrx.jobs.JobManager;
 import smolrx.msg.ClientMessage;
+import smolrx.msg.SignOff;
 import smolrx.storage.ObjectStorage;
 
 public class Servlet implements Runnable {
@@ -71,9 +72,12 @@ public class Servlet implements Runnable {
             // -- 
             try {
                 while (true){
-                    // otherwise, it MUST be a client message.
+                    // it MUST be a client message.
                     var clientMessage = (ClientMessage)this.channel.readObject();
                     clientMessage.handle(this.channel, this.sJobManager, this.sObjectStorage);
+                    if (clientMessage instanceof SignOff) {
+                        break; // End of session.
+                    }
                 }
             } catch (RXException e) {
                 this.channel.sendObject(e.intoTerminationMessage());

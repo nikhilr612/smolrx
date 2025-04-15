@@ -21,6 +21,7 @@ import smolrx.msg.JarRequest;
 import smolrx.msg.JobRequest;
 import smolrx.msg.Joblisting;
 import smolrx.msg.PushResult;
+import smolrx.msg.SignOff;
 import smolrx.msg.Termination;
 
 /**
@@ -130,6 +131,8 @@ public class SimpleClient implements Runnable {
                     break;
             }
 
+            // We're done so let's sign-off.
+            channel.sendObject(new SignOff());
         } catch (IOException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to send object to server.", e);
         } catch (InvalidKeyException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException e) {
