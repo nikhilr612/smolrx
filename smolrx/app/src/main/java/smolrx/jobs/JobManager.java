@@ -6,8 +6,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
+import java.util.logging.Level;
 
 import smolrx.RXException;
+import smolrx.Servlet;
+import smolrx.msg.BulkInputs;
+import smolrx.msg.InputRequest;
 import smolrx.msg.InspectResult;
 import smolrx.msg.JarRequest;
 import smolrx.msg.JobRequest;
@@ -47,6 +51,11 @@ public class JobManager {
      * Do not allow aggregation / collect jobs to complete before all pre-requisites have completed upto set redundance.
      */
     boolean forceRedundance;
+
+    /**
+     * Disallow bulk input requests for more jobs than this limit.
+     */
+    int bulkLimit;
 
     public boolean admitsAnySlogger() {
         return admitAnySlogger;
@@ -114,9 +123,13 @@ public class JobManager {
      * @throws RXException if request Job ID is invalid, role is incompatible, or pre-requisite jobs have not finished.
      */
     public AbstractMap.SimpleEntry<String,Serializable> fetchJobInfoPair(JarRequest jarRequest) throws RXException {
-        var jobInfo = this.jobInfo.get(jarRequest.getJobId());
-        if (jobInfo == null) throw new RXException("No pending job with id: " + jarRequest.getJobId());
         var suitable = this.suitableJobType(jarRequest.getRoleKey());
+        return _fetchJobInfoPairInner(jarRequest.getJobId(), suitable);
+    }
+
+    private AbstractMap.SimpleEntry<String,Serializable> _fetchJobInfoPairInner(long job_id, JobType suitable) throws RXException {
+        var jobInfo = this.jobInfo.get(job_id);
+        if (jobInfo == null) throw new RXException("No pending job with id: " + job_id);
         if (suitable != jobInfo.type) {
             throw new RXException("Client ill-suited to the job.");
         }
@@ -153,5 +166,36 @@ public class JobManager {
         var pJobInfo = this.jobInfo.get(inspectResult.getParentJobId());
         if (!pJobInfo.prerequisite_jobs.contains(inspectResult.getJobId()))
             throw new RXException("Cannot inspect results of job with id: " + inspectResult.getJobId());
+    }
+
+    public BulkInputs getJobInputs(InputRequest inputRequest) throws RXException {
+        if (inputRequest.getSize() > this.bulkLimit) {
+            throw new RXException("Bulk input request exceeds limit of " + this.bulkLimit);
+        }
+        var inputmap = new HashMap<Long, Object>();
+        var fetchFails = 0;
+        var suitable = this.suitableJobType(inputRequest.getRoleKey());
+
+        // Let's get the range first.
+        for (long i = inputRequest.getJobRangeStart(); i < inputRequest.getJobRangeEnd(); i++) {
+            try {
+                var pair = _fetchJobInfoPairInner(i, suitable);
+                inputmap.put(i, pair.getValue());
+            } catch (RXException e) {
+                fetchFails += 1;
+            }
+        }
+
+        // Now for the additional jobs.
+        for (long job_id : inputRequest.getAdditionalJobs()) {
+            try {
+                var pair = _fetchJobInfoPairInner(job_id, suitable);
+                inputmap.put(job_id, pair.getValue());
+            } catch (RXException e) {
+                fetchFails += 1;
+            }
+        }
+
+        return new BulkInputs(inputmap, fetchFails);
     }
 }
