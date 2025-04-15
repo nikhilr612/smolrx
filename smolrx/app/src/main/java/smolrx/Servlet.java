@@ -37,7 +37,7 @@ public class Servlet implements Runnable {
      */
     private ObjectStorage sObjectStorage;
 
-    private static Logger LOGGER = Logger.getLogger("smolrx-servlet");
+    public static Logger LOGGER = Logger.getLogger("smolrx-servlet");
 
     /**
      * Create a new Servlet to handle connection from a client.

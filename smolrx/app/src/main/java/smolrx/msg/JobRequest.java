@@ -3,12 +3,14 @@ package smolrx.msg;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.util.Optional;
+import java.util.logging.Level;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
 import smolrx.RXException;
 import smolrx.SecureChannel;
+import smolrx.Servlet;
 import smolrx.jobs.JobManager;
 import smolrx.storage.ObjectStorage;
 
@@ -59,6 +61,7 @@ public final class JobRequest extends ClientMessage {
         try {
             channel.sendObject(jobManager.listJobs(this));
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | RXException e) {
+            Servlet.LOGGER.log(Level.WARNING, "Failed to send job listing to client: " + channel.toString(), e);
             throw new RXException("Failed to send job listing.", e);
         }
     }

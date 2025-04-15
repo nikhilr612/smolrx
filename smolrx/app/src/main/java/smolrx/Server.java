@@ -42,6 +42,8 @@ public class Server extends Thread {
      */
     public Server(int port, int backlong, JobManager manager, ObjectStorage storage) throws IOException {
         this.serverSocket = new ServerSocket(port, port);
+        this.jobManager = manager;
+        this.storage = storage;
         this.alive = true;
     }
 

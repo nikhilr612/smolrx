@@ -9,7 +9,7 @@ import smolrx.jobs.JobMetadata;
 public final class Joblisting extends ServerMessage {
     ArrayList<Long> jobIDs;
     ArrayList<JobInfo> jobInfos;
-    Optional<ArrayList<JobMetadata>> jobMeta;
+    ArrayList<JobMetadata> jobMeta;
 
     /**
      * Create a new job listing with the specified jobs and their meta data.
@@ -20,7 +20,7 @@ public final class Joblisting extends ServerMessage {
     public Joblisting(ArrayList<Long> jobIDs, ArrayList<JobInfo> jobInfos, ArrayList<JobMetadata> meta) {
         this.jobIDs = jobIDs;
         this.jobInfos = jobInfos;
-        this.jobMeta = Optional.of(meta);
+        this.jobMeta = meta;
     }
 
     /**
@@ -31,7 +31,7 @@ public final class Joblisting extends ServerMessage {
     public Joblisting(ArrayList<Long> jobIDs, ArrayList<JobInfo> jobInfos) {
         this.jobIDs = jobIDs;
         this.jobInfos = jobInfos;
-        this.jobMeta = Optional.empty();
+        this.jobMeta = null;
     }
 
     public ArrayList<Long> getJobIDs() {
@@ -43,10 +43,10 @@ public final class Joblisting extends ServerMessage {
     }
 
     public Optional<ArrayList<JobMetadata>> getJobMeta() {
-        return jobMeta;
+        return jobMeta == null ? Optional.empty() : Optional.of(jobMeta);
     }
 
     public boolean hasMeta() {
-        return jobMeta.isPresent();
+        return jobMeta != null;
     }
 }

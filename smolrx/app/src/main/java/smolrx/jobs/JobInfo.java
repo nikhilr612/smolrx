@@ -49,7 +49,7 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
      * If link is non-null, then the Client must fetch the JAR specified by the link.
      * The client must treat the file sent in response to JarRequest as file metadata, and verify it with the fetched file.
      */
-    Optional<String> link;
+    String link;
 
     JobInfo() {}
 
@@ -84,7 +84,7 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
     }
 
     public Optional<String> getLink() {
-        return link;
+        return link == null ? Optional.empty() : Optional.of(link);
     }
 
     public JobType getType() {

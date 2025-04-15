@@ -86,7 +86,7 @@ public class JobManager {
         var jobInfos = new ArrayList<JobInfo>();
         ArrayList<JobMetadata> jobMetas = null;
 
-        if ((request.getRoleKey().isPresent()) && (this.suitableJobType(request.getRoleKey().get()) == JobType.AUDIT)) {
+        if ((request.getRoleKey() != null) && (this.suitableJobType(request.getRoleKey()) == JobType.AUDIT)) {
             jobMetas = new ArrayList<>();
             while (it.hasNext()) {
                 var t = it.next();

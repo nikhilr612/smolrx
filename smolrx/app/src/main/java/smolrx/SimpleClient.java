@@ -9,7 +9,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -22,6 +21,7 @@ import smolrx.msg.JarRequest;
 import smolrx.msg.JobRequest;
 import smolrx.msg.Joblisting;
 import smolrx.msg.PushResult;
+import smolrx.msg.Termination;
 
 /**
  * A simple client implementation, that simply performs only 1 job- the highest priority job available for its role.
@@ -81,7 +81,13 @@ public class SimpleClient implements Runnable {
         try {
             var jobreq = new JobRequest(this.min_priority, 1, this.roleKey);
             channel.sendObject(jobreq);
-            var jobl = (Joblisting)channel.readObject();
+
+            var readObj = channel.readObject();
+            if (readObj instanceof Termination) {
+                throw new RuntimeException("Server terminated session: " + ((Termination) readObj).getCause());
+            }
+
+            var jobl = (Joblisting)readObj;
             var jobId = jobl.getJobIDs().get(0);
             var jobInfo = jobl.getJobInfos().get(0);
             

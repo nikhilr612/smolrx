@@ -66,7 +66,7 @@ public class JobBuilder {
         jobInfo.properties = this.properties;
         jobInfo.redundancy_count = this.redundancyCount;
         jobInfo.prerequisite_jobs = this.prerequisiteJobs;
-        jobInfo.link = this.link;
+        jobInfo.link = this.link.isEmpty() ? null : this.link.get();
         return jobInfo;
     }
 }
