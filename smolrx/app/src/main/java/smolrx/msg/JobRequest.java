@@ -34,9 +34,9 @@ public final class JobRequest extends ClientMessage {
     /**
      * If auditing, specify an audit key.
      */
-    Optional<String> roleKey;
+    String roleKey;
 
-    public JobRequest(long min_priority, int limit, Optional<String> roleKey) {
+    public JobRequest(long min_priority, int limit, String roleKey) {
         this.min_priority = min_priority;
         this.limit = limit;
         this.roleKey = roleKey;
@@ -50,7 +50,7 @@ public final class JobRequest extends ClientMessage {
         return min_priority;
     }
 
-    public Optional<String> getRoleKey() {
+    public String getRoleKey() {
         return roleKey;
     }
 

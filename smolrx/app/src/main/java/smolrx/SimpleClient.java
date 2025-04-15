@@ -79,7 +79,7 @@ public class SimpleClient implements Runnable {
         SimpleClient.LOGGER.info("Channel opened!");
 
         try {
-            var jobreq = new JobRequest(this.min_priority, 1, Optional.of(this.roleKey));
+            var jobreq = new JobRequest(this.min_priority, 1, this.roleKey);
             channel.sendObject(jobreq);
             var jobl = (Joblisting)channel.readObject();
             var jobId = jobl.getJobIDs().get(0);
