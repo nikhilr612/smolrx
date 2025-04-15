@@ -14,7 +14,7 @@ The project is licensed under [Apache 2.0](https://www.apache.org/licenses/LICEN
 ## Plan
 - [x] RSA-negotiated AES encryption
 - [x] Flate compression
-- [ ] Job and Program Configuration
+- [x] Job and Program Configuration
 - [ ] Remote Job Execution
 
 Feedback and contributions are welcome!
