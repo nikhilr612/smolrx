@@ -223,4 +223,12 @@ public class JobManager {
 
         return new BulkInputs(inputmap, fetchFails);
     }
+
+    public int getBulkRequestLimit() {
+        return bulkLimit;
+    }
+
+    public int getBulkPushLimit() {
+        return bulkPushLimit;
+    }
 }

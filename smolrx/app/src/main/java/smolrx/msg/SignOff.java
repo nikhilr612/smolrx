@@ -11,7 +11,7 @@ import smolrx.storage.ObjectStorage;
  */
 public final class SignOff extends ClientMessage {
 
-    long serialVersionUID = 7564534231L;
+    private static final long serialVersionUID = 7564534231L;
 
     public SignOff() {}
 

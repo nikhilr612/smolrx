@@ -19,6 +19,6 @@ public class RXException extends Exception {
     }
 
     public Termination intoTerminationMessage() {
-        return Termination.abrupt(this.getMessage() + "\n\tcause:" + this.getCause().getMessage());
+        return Termination.abrupt(this.getMessage() + "\n\tcause:" + this.getCause());
     }
 }

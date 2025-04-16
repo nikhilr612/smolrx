@@ -27,6 +27,11 @@ public class TimidClient implements Runnable {
         try (Socket socket = new Socket(hostName, serverPort)) {
             SecureChannel channel = SecureChannel.openServerChannel(socket);
 
+            var _config_ignore = channel.readObject(); // read the config object.
+            if (!(_config_ignore instanceof ProtocolConfig)) {
+                throw new RuntimeException("Invalid protocol config object received.");
+            }
+
             JobRequest jobRequest = new JobRequest(minPriority, 1, roleKey);
             channel.sendObject(jobRequest);
 

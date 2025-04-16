@@ -5,7 +5,7 @@ package smolrx.msg;
  */
 public final class Termination extends ServerMessage {
 
-    long serialVersionUID = 0xffeffeffefL;
+    private static final long serialVersionUID = 0xffeffeffefL;
 
     // Cause for termination, if session was abruptly terminated.
     String cause;

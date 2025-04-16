@@ -20,6 +20,7 @@ import smolrx.msg.InspectResult;
 import smolrx.msg.JarRequest;
 import smolrx.msg.JobRequest;
 import smolrx.msg.Joblisting;
+import smolrx.msg.ProtocolConfig;
 import smolrx.msg.PushResult;
 import smolrx.msg.SignOff;
 import smolrx.msg.Termination;
@@ -42,7 +43,7 @@ public class SimpleClient implements Runnable {
     private int min_priority;
     private String roleKey;
 
-    private static Logger LOGGER = Logger.getLogger("smolrx-client");
+    static Logger LOGGER = Logger.getLogger("smolrx-client");
 
     public SimpleClient(String hostName, int serverPort, int min_priority, String roleKey) {
         this.hostName = hostName;
@@ -80,6 +81,11 @@ public class SimpleClient implements Runnable {
         SimpleClient.LOGGER.info("Channel opened!");
 
         try {
+            var _config_ignore = channel.readObject(); // read the config object.
+            if (!(_config_ignore instanceof ProtocolConfig)) {
+                throw new RuntimeException("Invalid protocol config object received.");
+            }
+
             var jobreq = new JobRequest(this.min_priority, 1, this.roleKey);
             channel.sendObject(jobreq);
 
@@ -105,7 +111,7 @@ public class SimpleClient implements Runnable {
             SimpleClient.LOGGER.info("Received program input: " + programInput.toString() + " . Creating temporary file.");
 
             var tmpf = File.createTempFile("smolrx", ".jar");
-            tmpf.deleteOnExit();
+            // tmpf.deleteOnExit();
 
             FileOutputStream fos = new FileOutputStream(tmpf);
             channel.readStream(fos);

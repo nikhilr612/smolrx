@@ -15,5 +15,7 @@ public enum JobType {
     /**
      * Authorized node can access logs. No jobs can exist of this type; enum variant reserved.
      */
-    AUDIT,
+    AUDIT;
+
+    private static final long serialVersionUID = 0x999cafebabeL;
 }

@@ -9,7 +9,7 @@ import smolrx.storage.ObjectStorage;
 
 public final class PushResult extends ClientMessage {
 
-    long serialVersionUID = 65432123456L;
+    private static final long serialVersionUID = 65432123456L;
 
     /**
      * An identifier which specifies the role of the client.

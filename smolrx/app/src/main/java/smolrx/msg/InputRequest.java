@@ -18,7 +18,7 @@ import smolrx.storage.ObjectStorage;
  * Request only the program input objects for various jobs in bulk.
  */
 public final class InputRequest extends ClientMessage {
-    long serialVersionUID = 2123454321L;
+    private static final long serialVersionUID = 2123454321L;
 
     /**
      * The start of the range of job IDs to request input for.

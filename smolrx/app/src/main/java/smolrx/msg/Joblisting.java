@@ -8,7 +8,7 @@ import smolrx.jobs.JobMetadata;
 
 public final class Joblisting extends ServerMessage {
 
-    long serialVersionUID = 5432123456789L;
+    private static final long serialVersionUID = 5432123456789L;
 
     ArrayList<Long> jobIDs;
     ArrayList<JobInfo> jobInfos;

@@ -1,9 +1,14 @@
 package smolrx.jobs;
 
+import java.io.Serializable;
+
 /**
  * Book-keeping and tracking completion of Job.
  */
-public class JobMetadata {
+public class JobMetadata implements Serializable {
+
+    private static final long serialVersionUID = 0xdeadbeefL;
+
     /**
      * The number of times an aggregator has requested the result(s) of this job.
      */

@@ -27,8 +27,10 @@ public class JarLoader {
      * @throws ClassCastException If the specified class does not implement Function<Object,Object>
      */
     public static Function<Object,Object> loadJar(File file, String className) throws MalformedURLException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {
+        SimpleClient.LOGGER.info("Loading jar file: " + file.getAbsolutePath() + " with class: " + className);
         URL[] urls = new URL[]{file.toURI().toURL()};
         URLClassLoader urlClassLoader = new URLClassLoader(urls, JarLoader.class.getClassLoader());
+        SimpleClient.LOGGER.info("Classloader: " + urlClassLoader.toString());
         var entryClass = Class.forName(className, true, urlClassLoader);
         var obj = entryClass.getConstructor().newInstance();
         var func = (Function<Object,Object>)obj; // Throws class cast exception.

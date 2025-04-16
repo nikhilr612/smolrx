@@ -13,6 +13,7 @@ import javax.crypto.NoSuchPaddingException;
 
 import smolrx.jobs.JobManager;
 import smolrx.msg.ClientMessage;
+import smolrx.msg.ProtocolConfig;
 import smolrx.msg.SignOff;
 import smolrx.storage.ObjectStorage;
 
@@ -71,6 +72,9 @@ public class Servlet implements Runnable {
         try {
             // -- 
             try {
+                this.channel.sendObject(
+                    new ProtocolConfig(this.sJobManager.getBulkRequestLimit(), this.sJobManager.getBulkPushLimit())
+                );
                 while (true){
                     // it MUST be a client message.
                     var clientMessage = (ClientMessage)this.channel.readObject();

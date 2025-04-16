@@ -20,7 +20,7 @@ import smolrx.storage.ObjectStorage;
  */
 public final class JarRequest extends ClientMessage {
 
-    long serialVersionUID = 3141592653589793L;
+    private static final long serialVersionUID = 3141592653589793L;
 
     /**
      * A valid Job ID.

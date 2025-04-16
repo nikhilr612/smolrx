@@ -9,6 +9,9 @@ import java.util.Optional;
  * Data-class that maintains instance-specific information about a program to be executed.
  */
 public class JobInfo implements Serializable, Comparable<JobInfo> {
+
+    private static final long serialVersionUID = 0xb00bcafeL;
+
     /**
      * The type of job.
      */
