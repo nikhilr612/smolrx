@@ -6,6 +6,8 @@ import java.util.HashMap;
  * Server response containing only the program input objects for multiple jobs.
  */
 public final class BulkInputs extends ServerMessage {
+    long serialVersionUID = 123454321L;
+
     /**
      * Map Job IDs to their inputs.
      */

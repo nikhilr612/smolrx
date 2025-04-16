@@ -17,6 +17,9 @@ import smolrx.storage.ObjectStorage;
  * Application message to request a list of jobs up for grabs.
  */
 public final class JobRequest extends ClientMessage {
+
+    long serialVersionUID = 432123456789L;
+
     /**
      * Minimum priority of jobs to be listed.
      */

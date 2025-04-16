@@ -54,7 +54,7 @@ public class App {
                 e.printStackTrace();
             }
         } else if (args[0].equals("client")) {
-            SimpleClient c = new SimpleClient("localhost", 6444, 0, "public");
+            SimpleClient c = new SimpleClient("localhost", 6444, 0, "private");
             c.run();
         } else {
             TimidClient tc = new TimidClient("localhost", 6444, 0, "public");

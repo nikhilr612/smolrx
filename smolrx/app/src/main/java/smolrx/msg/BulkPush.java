@@ -13,7 +13,10 @@ import smolrx.storage.ObjectStorage;
 /**
  * Push multiple results in Bulk.
  */
-public final class BulkPush extends ClientMessage{
+public final class BulkPush extends ClientMessage {
+
+    long serialVersionUID = 123456789L;
+
     /**
      * Map job IDs to their results.
      */

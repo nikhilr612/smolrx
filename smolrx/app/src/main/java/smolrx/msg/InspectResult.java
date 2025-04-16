@@ -12,6 +12,8 @@ import smolrx.jobs.JobManager;
 import smolrx.storage.ObjectStorage;
 
 public final class InspectResult extends ClientMessage {
+    long serialVersionUID = 3123454321L;
+
     /**
      * The job ID whose result is requested.
      */
