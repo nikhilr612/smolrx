@@ -1,5 +1,6 @@
 package smolrx.msg;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -33,8 +34,12 @@ public final class BulkPush extends ClientMessage{
 
     @Override
     public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'handle'");
+        jobManager.registerJobResults(this);
+        try {
+            objectStorage.putResultsBulk(this);
+        } catch (IOException e) {
+            throw new RXException("Failed to store bulk results", e);    
+        }
     }
 
     public String getRoleKey() {
