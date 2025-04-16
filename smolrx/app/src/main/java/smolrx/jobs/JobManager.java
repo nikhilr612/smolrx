@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
-import java.util.logging.Level;
 
 import smolrx.RXException;
-import smolrx.Servlet;
 import smolrx.msg.BulkInputs;
 import smolrx.msg.BulkPush;
 import smolrx.msg.InputRequest;
@@ -57,6 +55,11 @@ public class JobManager {
      * Disallow bulk input requests for more jobs than this limit.
      */
     int bulkLimit;
+
+    /**
+     * Maximum number of results that can be pushed at once.
+     */
+    int bulkPushLimit;
 
     public boolean admitsAnySlogger() {
         return admitAnySlogger;
@@ -158,6 +161,9 @@ public class JobManager {
      */
     public void registerJobResults(BulkPush pushResult) throws RXException {
         var jobtype = this.suitableJobType(pushResult.getRoleKey());
+        if (pushResult.getJobs().size() > this.bulkPushLimit) {
+            throw new RXException("Bulk push exceeds limit of " + this.bulkPushLimit);
+        }
         synchronized(jobMetas) {
             for (var job_id : pushResult.getJobs()) {
                 _registerJobResultInner(job_id, jobtype);

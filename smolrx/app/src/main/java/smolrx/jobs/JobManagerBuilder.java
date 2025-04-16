@@ -98,6 +98,8 @@ public class JobManagerBuilder {
         manager.jobInfo = this.jobInfo;
         manager.jobMetas = this.jobMetas;
         manager.keyMap = this.keyMap;
+        manager.bulkLimit = this.bulkReqLimit;
+        manager.bulkPushLimit = this.bulkPushLimit;
         manager.admitAnySlogger = this.admitAnySlogger;
         manager.forceRedundance = this.forceRedundance;
         return manager;
