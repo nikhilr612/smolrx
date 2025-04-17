@@ -112,7 +112,7 @@ public class SimpleClient implements Runnable {
 
             var programInput = channel.readObject();
 
-            SimpleClient.LOGGER.info("Received program input: " + programInput.toString() + " . Creating temporary file.");
+            SimpleClient.LOGGER.info("Received program input: " + programInput + " . Creating temporary file.");
 
             var tmpf = File.createTempFile("smolrx", ".jar");
             tmpf.deleteOnExit();
@@ -169,13 +169,17 @@ public class SimpleClient implements Runnable {
     }
 
     private PushResult handle_reducer_job(SecureChannel channel, File tmpf, Object programInput, String className, HashSet<Long> prerequisiteJobs, long job_id) {
-        var input = programInput;
+        var input = programInput != null ? programInput : 0;
         try {
             var reducer = JarLoader.loadJar(tmpf, className);
             for (var fjob : prerequisiteJobs) {
-                var inspreq = new InspectResult(fjob, job_id, className, 1); // take only 1 for now.
+                var inspreq = new InspectResult(fjob, job_id, roleKey, 1); // take only 1 for now.
                 channel.sendObject(inspreq);
-                var first_result = ((Object[])channel.readObject())[0]; // just take index 0
+                var response = channel.readObject();
+                if (response instanceof Termination) {
+                    throw new RuntimeException("Server terminated session: " + ((Termination) response).getCause());
+                }
+                var first_result = ((Object[])response)[0]; // just take index 0
                 var red_input = new Object[]{input, first_result}; // combine the two inputs.
                 input = reducer.apply(red_input);
             }
