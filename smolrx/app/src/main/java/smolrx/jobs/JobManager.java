@@ -99,9 +99,11 @@ public class JobManager {
         var jobInfos = new ArrayList<JobInfo>();
         ArrayList<JobMetadata> jobMetas = null;
 
-        if ((request.getRoleKey() != null) && (this.suitableJobType(request.getRoleKey()) == JobType.AUDIT)) {
+        var suitableType = this.suitableJobType(request.getRoleKey());
+
+        if ((request.getRoleKey() != null) && (suitableType == JobType.AUDIT)) {
             jobMetas = new ArrayList<>();
-            while (it.hasNext()) {
+            while (it.hasNext() && jobIds.size() < request.getLimit()) {
                 var t = it.next();
                 jobIds.add(t.getKey());
                 jobInfos.add(t.getValue().maskedClone());
@@ -111,8 +113,9 @@ public class JobManager {
             return new Joblisting(jobIds, jobInfos, jobMetas);
         }
         
-        while (it.hasNext()) {
+        while (it.hasNext() && jobIds.size() < request.getLimit()) {
             var t = it.next();
+            if (suitableType != t.getValue().type) continue;
             jobIds.add(t.getKey());
             jobInfos.add(t.getValue().maskedClone());
         }

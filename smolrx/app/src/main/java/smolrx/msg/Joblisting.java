@@ -52,4 +52,11 @@ public final class Joblisting extends ServerMessage {
     public boolean hasMeta() {
         return jobMeta != null;
     }
+
+    public void printTable() {
+        System.out.println("Job ID\tJob Type\tLink");
+        for (int i = 0; i < jobIDs.size(); i++) {
+            System.out.println(jobIDs.get(i) + "\t" + jobInfos.get(i).getType() + "\t" + jobInfos.get(i).getLink());
+        }
+    }
 }

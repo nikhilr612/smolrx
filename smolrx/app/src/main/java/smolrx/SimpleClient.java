@@ -86,7 +86,7 @@ public class SimpleClient implements Runnable {
                 throw new RuntimeException("Invalid protocol config object received.");
             }
 
-            var jobreq = new JobRequest(this.min_priority, 1, this.roleKey);
+            var jobreq = new JobRequest(this.min_priority, 5, this.roleKey);
             channel.sendObject(jobreq);
 
             var readObj = channel.readObject();
@@ -95,6 +95,10 @@ public class SimpleClient implements Runnable {
             }
 
             var jobl = (Joblisting)readObj;
+
+            SimpleClient.LOGGER.info("Received job listing");
+            jobl.printTable();
+
             var jobId = jobl.getJobIDs().get(0);
             var jobInfo = jobl.getJobInfos().get(0);
             
@@ -111,7 +115,7 @@ public class SimpleClient implements Runnable {
             SimpleClient.LOGGER.info("Received program input: " + programInput.toString() + " . Creating temporary file.");
 
             var tmpf = File.createTempFile("smolrx", ".jar");
-            // tmpf.deleteOnExit();
+            tmpf.deleteOnExit();
 
             FileOutputStream fos = new FileOutputStream(tmpf);
             channel.readStream(fos);

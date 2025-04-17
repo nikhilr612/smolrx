@@ -29,4 +29,9 @@ public final class Termination extends ServerMessage {
     public String getCause() {
         return cause == null ? "servlet closed channel" : cause;
     }
+
+    @Override
+    public String toString() {
+        return "Termination:" + cause;
+    }
 }
