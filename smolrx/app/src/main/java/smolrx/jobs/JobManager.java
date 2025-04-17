@@ -140,7 +140,7 @@ public class JobManager {
         if (suitable != jobInfo.type) {
             throw new RXException("Client ill-suited to the job.");
         }
-        verifyPrerequisites(jobInfo.prerequisite_jobs);
+        if (!jobInfo.relaxed) verifyPrerequisites(jobInfo.prerequisite_jobs);
         var entry = new AbstractMap.SimpleEntry<>(this.jarMap.get(jobInfo.programId), jobInfo.jobData);
         return entry;
     }

@@ -19,6 +19,7 @@ public class JobBuilder {
     private int redundancyCount = 1;
     private HashSet<Long> prerequisiteJobs = new HashSet<>();
     private Optional<String> link = Optional.empty();
+    private boolean relax = false; // not relaxed by default.
 
     public JobBuilder(long priority, long programId, JobType type) {
         if (priority < 0) {
@@ -57,6 +58,11 @@ public class JobBuilder {
         return this;
     }
 
+    public JobBuilder relax() {
+        this.relax = true;
+        return this;
+    }
+
     public JobInfo build() {
         JobInfo jobInfo = new JobInfo();
         jobInfo.type = this.type;
@@ -66,6 +72,7 @@ public class JobBuilder {
         jobInfo.properties = this.properties;
         jobInfo.redundancy_count = this.redundancyCount;
         jobInfo.prerequisite_jobs = this.prerequisiteJobs;
+        jobInfo.relaxed = this.relax;
         jobInfo.link = this.link.isEmpty() ? null : this.link.get();
         return jobInfo;
     }

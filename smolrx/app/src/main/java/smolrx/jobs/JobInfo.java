@@ -46,6 +46,13 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
      * Jobs that must be completed before allowing admission of any results of this job.
      */
     HashSet<Long> prerequisite_jobs;
+
+    /**
+     * Indicates that the pre-requisite jobs need not all be completed before this job can be executed.
+     * This is primarily intended for allowing reducers to run in parallel (or concurrently) with mappers.
+     * This should only be used when Client-side scheduling allows for interruptible jobs.
+     */
+    boolean relaxed;
     
     /**
      * A URI/Link pointing to the executable JAR required for this job.
@@ -71,6 +78,7 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
 
         jinfo.prerequisite_jobs = this.prerequisite_jobs;
         jinfo.type = this.type;
+        jinfo.relaxed = this.relaxed;
         jinfo.properties = this.properties;
         jinfo.priority = this.priority;
         return jinfo;
