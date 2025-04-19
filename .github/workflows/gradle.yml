@@ -53,7 +53,9 @@ jobs:
     #   run: gradle build
 
   dependency-submission:
-
+    defaults:
+      run:
+        working-directory: ./smolrx
     runs-on: ubuntu-latest
     permissions:
       contents: write
