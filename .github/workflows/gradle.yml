@@ -36,6 +36,9 @@ jobs:
     - name: Make Gradlew Executable
       run: chmod +x ./smolrx/gradlew
 
+    - name: List files and folders
+      run: find .
+
     - name: Build with Gradle Wrapper
       run: ./smolrx/gradlew build --stacktrace --info
 
