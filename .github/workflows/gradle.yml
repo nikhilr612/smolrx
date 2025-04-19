@@ -37,7 +37,7 @@ jobs:
       run: chmod +x ./smolrx/gradlew
 
     - name: List files and folders
-      run: find .
+      run: find . -type f -exec realpath {}\
 
     - name: Build with Gradle Wrapper
       run: ./smolrx/gradlew build --stacktrace --info
