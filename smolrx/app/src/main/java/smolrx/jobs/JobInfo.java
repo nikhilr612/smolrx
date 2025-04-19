@@ -105,6 +105,9 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
     public HashMap<String, String> getProperties() {
         return properties;
     }
+    public long getProgramId() {
+        return this.programId;
+    }
 
     public HashSet<Long> getPrerequisiteJobs() {
         return prerequisite_jobs;

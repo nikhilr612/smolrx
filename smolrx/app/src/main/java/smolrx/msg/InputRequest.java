@@ -40,6 +40,13 @@ public final class InputRequest extends ClientMessage {
      */
     ArrayList<Long> additional_jobs;
 
+    public InputRequest(String roleKey, long jobid_start, long jobid_end, ArrayList<Long> additional_jobs) {
+        this.roleKey = roleKey;
+        this.jobid_start = jobid_start;
+        this.jobid_end = jobid_end;
+        this.additional_jobs = additional_jobs;
+    }    
+
     @Override
     public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
         var response = jobManager.getJobInputs(this);
