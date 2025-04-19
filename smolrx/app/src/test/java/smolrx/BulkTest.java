@@ -94,7 +94,7 @@ public class BulkTest {
     }
 
     private static void startCollectorClient() {
-        new Thread(new CollectorTest("localhost", 6444, 0, "collector-key")).start();
+        // new Thread(new CollectorTest("localhost", 6444, 0, "collector-key")).start();
         System.out.println("Started collector client with COLLECT role");
     }
     private static void startBulkClient(){
@@ -104,7 +104,7 @@ public class BulkTest {
         for (int i = 0; i < 100; i++) {
             new Thread(new SimpleClient("localhost", 6444, 0, "slog-key")).start();
         }
-    new Thread(new CollectorTest("localhost", 6444, 0, "collector-key")).start();   
+    // new Thread(new CollectorTest("localhost", 6444, 0, "collector-key")).start();   
         System.out.println("Started 100 worker clients with SLOG role and 1 collector clients with COLLECT role");
     }
 }
