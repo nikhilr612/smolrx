@@ -69,7 +69,7 @@ public final class InputRequest extends ClientMessage {
         return jobid_end;
     }
 
-    public int getSize() {
+    public long getSize() {
         int ret = 0;
         if (this.jobid_start > this.jobid_end) {
             ret += this.jobid_end - this.jobid_start;
