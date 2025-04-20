@@ -12,6 +12,7 @@
 ## Details
 - **Build Tool**: Gradle
 - Licensed under [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+- Uses GCM, aligns with security best-practices such as AEAD.
 
 ## Current Progress
 - [x] RSA-negotiated AES encryption
@@ -23,9 +24,10 @@
 - Better client-side implementations.
 - Emergent scheduling.
 - More tests and benchmarks.
+- Support for QUIC
 
 # Demo - `bfcarm`
 A demo program to classify Carmichael numbers under 1000, through a naive-brute-force approach with 1010 jobs is implemented for testing purposes.
-A dummy client which disconnects immediately upon Jar delivery after job selection was used to time the delay suffered through the usage of this protocol, as compared to an ideal scenario where job execution begins immediately after static scheduling. The delay, hereby termed - interconnect latency is within 256.9-267.2 ms (mean = 262.044, sample variance = 7014.458, N = 1000, p = 0.05) for processes on the same machine. For similar or more intensive loads, ~257ms can be considered as the best-case interconnect latency, as this will likely increase with size and complexity of server jobs. 
+A dummy client which disconnects immediately upon Jar delivery after job selection was used to time the delay suffered through the usage of this protocol, as compared to an ideal scenario where job execution begins immediately after static scheduling. The delay, hereby termed - interconnect latency is within 261.74-270.06 ms (mean = 265.898, sample variance = 4494.374, median = 253.5, N = 1000, p = 0.05) for processes on the same machine. For similar or more intensive loads, ~260ms can be considered as the best-case interconnect latency, as this will likely increase with size and complexity of server jobs. 
 
 Contributions and feedback are encouraged! Feel free to submit issues or pull requests.
