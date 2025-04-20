@@ -20,10 +20,29 @@ public class FileStorage extends ObjectStorage {
      */
     File baseDirectory;
 
-    public FileStorage(String baseDirPath) {
-        super();
+    // Changed to private constructor to enforce use of static factory method.
+    // Prevents partial initialization.
+    private FileStorage(String baseDirPath) {
         this.baseDirectory = new File(baseDirPath);
-        assert(this.baseDirectory.isDirectory());
+    }
+
+    /**
+     * Create a new FileStorage object with the specified base directory.
+     * If the directory does not exist, it will be created.
+     * @param baseDirPath The base directory path for storing files.
+     * @return A new FileStorage object.
+     * @throws IllegalArgumentException If the base directory is not a directory or cannot be created.
+     */
+    public static FileStorage create(String baseDirPath) {
+        var baseDirectory = new File(baseDirPath);
+        if (!baseDirectory.exists()) {
+            if (!baseDirectory.mkdirs()) {
+                throw new IllegalArgumentException("Failed to create base directory: " + baseDirPath);
+            }
+        } else if (!baseDirectory.isDirectory()) {
+            throw new IllegalArgumentException("Base directory is not a directory: " + baseDirPath);
+        }
+        return new FileStorage(baseDirPath);
     }
 
     @Override
@@ -45,7 +64,9 @@ public class FileStorage extends ObjectStorage {
     @Override
     public void putResult(PushResult pResult) throws IOException {
         var jobDirectory = new File(this.baseDirectory, "J" + pResult.getJobId() + File.pathSeparator);
-        if (!jobDirectory.exists()) jobDirectory.mkdirs();
+        if (!jobDirectory.exists()) if (!jobDirectory.mkdirs()) {
+            throw new IOException("Failed to create job directory: " + jobDirectory.getAbsolutePath());
+        }
         var file = File.createTempFile("smrx_", null, jobDirectory);
         var fos = new FileOutputStream(file);
         var oos = new ObjectOutputStream(fos);

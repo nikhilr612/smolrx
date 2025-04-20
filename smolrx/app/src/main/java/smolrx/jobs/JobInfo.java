@@ -3,6 +3,7 @@ package smolrx.jobs;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -92,6 +93,32 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
             return 1;
         }
         return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        JobInfo jobInfo = (JobInfo) obj;
+        return programId == jobInfo.programId 
+            && type == jobInfo.type 
+            && priority == jobInfo.priority
+            && redundancy_count == jobInfo.redundancy_count
+            && relaxed == jobInfo.relaxed
+            && properties.equals(jobInfo.properties)
+            && prerequisite_jobs.equals(jobInfo.prerequisite_jobs)
+            && (link == null ? jobInfo.link == null : link.equals(jobInfo.link))
+            && (jobData == null ? jobInfo.jobData == null : jobData.equals(jobInfo.jobData));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+            programId, type, priority, 
+            jobData, redundancy_count, 
+            properties, prerequisite_jobs, 
+            relaxed, link
+        );
     }
 
     public Optional<String> getLink() {

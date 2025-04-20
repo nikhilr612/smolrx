@@ -47,6 +47,9 @@ public class TimidClient implements Runnable {
             channel.sendObject(jarRequest);
 
             Object programInput = channel.readObject();
+            if (programInput instanceof Termination termination) {
+                throw new RuntimeException("Server terminated session without sending program input: " + termination.getCause());
+            }
 
             File tempJar = File.createTempFile("smolrx", ".jar");
             tempJar.deleteOnExit();

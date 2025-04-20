@@ -90,11 +90,15 @@ public class SecureChannel implements Closeable {
      */
     public Object readObject() throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         var intBytes = new byte[4];
-        conn.getInputStream().read(intBytes);
+        if (conn.getInputStream().read(intBytes) != 4) {
+            throw new IOException("Failed to read length of incoming data.");
+        }
         var length = ByteBuffer.wrap(intBytes).getInt();
 
         var encDataBuf = new byte[length];
-        conn.getInputStream().read(encDataBuf);
+        if (conn.getInputStream().read(encDataBuf) != length) {
+            throw new IOException("Failed to read object data.");
+        }
 
         this.symCipher.init(Cipher.DECRYPT_MODE, this.secretKey);
         var dataBuf = this.symCipher.doFinal(encDataBuf);
@@ -152,18 +156,29 @@ public class SecureChannel implements Closeable {
         InflaterOutputStream inflateos = new InflaterOutputStream(outputStream);
         var encDataBuf = new byte[SecureChannel.BUFFER_SIZE * 2]; // Over-allocate to avoid dealing with padding shenanigans.
         var lenBuffer = ByteBuffer.allocate(2);
-        this.conn.getInputStream().read(lenBuffer.array());
+        
+        if (this.conn.getInputStream().read(lenBuffer.array()) != 2) {
+            throw new IOException("Failed to read length of incoming data.");
+        }
+
         int encLen = lenBuffer.getShort();
 
         this.symCipher.init(Cipher.DECRYPT_MODE, this.secretKey);
             
         while (encLen != 0) {
-            this.conn.getInputStream().read(encDataBuf, 0, encLen);
+
+            if (this.conn.getInputStream().read(encDataBuf, 0, encLen) != encLen) {
+                throw new IOException("Failed to read stream data.");
+            }
+
             var buffer = this.symCipher.doFinal(encDataBuf, 0, encLen);
             inflateos.write(buffer);
 
             lenBuffer.clear();
-            this.conn.getInputStream().read(lenBuffer.array());
+            if (this.conn.getInputStream().read(lenBuffer.array()) != 2) {
+                throw new IOException("Failed to read length of incoming data.");
+            }
+
             encLen = lenBuffer.getShort();
         }
     }
@@ -189,11 +204,15 @@ public class SecureChannel implements Closeable {
         conn.getOutputStream().write(ByteBuffer.allocate(4).putInt(publicKeyData.length).array());
         conn.getOutputStream().write(publicKeyData);
 
-        var lenBuf = new byte[4]; conn.getInputStream().read(lenBuf);
+        var lenBuf = new byte[4]; 
+        if(conn.getInputStream().read(lenBuf) != 4) 
+            throw new IOException("Failed to read length of incoming data. Failed to negotiate channel.");
         int len = ByteBuffer.wrap(lenBuf).getInt();
 
         var clientRandomDataEnc = new byte[len];
-        conn.getInputStream().read(clientRandomDataEnc);
+        if (conn.getInputStream().read(clientRandomDataEnc) != len) {
+            throw new IOException("Failed to negotiate channel security.");
+        }
 
         Cipher cipher = Cipher.getInstance(SecureChannel.ALGORITHM_TRANSFORMATION);
         cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
@@ -219,10 +238,14 @@ public class SecureChannel implements Closeable {
      */
     public static SecureChannel openServerChannel(Socket conn) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         var keyBuf = new byte[4];
-        conn.getInputStream().read(keyBuf);
+        if (conn.getInputStream().read(keyBuf) != 4) throw 
+            new IOException("Failed to negotiate channel security, could not read key length.");
+
         var keyLen = ByteBuffer.wrap(keyBuf).getInt();
+
         var publicKeyData = new byte[keyLen];
-        conn.getInputStream().read(publicKeyData);
+        if (conn.getInputStream().read(publicKeyData) != keyLen) throw 
+            new IOException("Failed to negotiate channel security, could not read key.");
 
         var publicKey = KeyFactory.getInstance(SecureChannel.ALGORITHM).generatePublic(new X509EncodedKeySpec(publicKeyData));
         var cipher = Cipher.getInstance(SecureChannel.ALGORITHM_TRANSFORMATION);

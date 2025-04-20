@@ -21,16 +21,34 @@ public class JobBuilder {
     private Optional<String> link = Optional.empty();
     private boolean relax = false; // not relaxed by default.
 
-    public JobBuilder(long priority, long programId, JobType type) {
+    /**
+     * Private constructor to enforce the use of the static factory method.
+     */
+    private JobBuilder(long priority, long programId, JobType type) {
+        this.type = type;
+        this.priority = priority;
+        this.programId = programId;
+    }
+
+    /**
+     * Create a new JobBuilder instance with the specified parameters.
+     * @param priority The priority of the job. Must be non-negative.
+     * @param programId The ID of the program. Must be positive.
+     * @param type The type of the job. Must not be null.
+     * @return The newly created JobBuilder instance.
+     * @throws IllegalArgumentException if any of the parameters are invalid.
+     */
+    public static JobBuilder newInstance(long priority, long programId, JobType type) {
         if (priority < 0) {
             throw new IllegalArgumentException("Priority must be non-negative.");
         }
         if (programId <= 0) {
             throw new IllegalArgumentException("ProgramId must be positive.");
         }
-        this.type = type;
-        this.priority = priority;
-        this.programId = programId;
+        if (type == null) {
+            throw new IllegalArgumentException("JobType must not be null.");
+        }
+        return new JobBuilder(priority, programId, type);
     }
 
     public JobBuilder setJobData(Serializable jobData) {
