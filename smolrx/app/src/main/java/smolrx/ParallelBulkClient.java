@@ -87,11 +87,6 @@ public class ParallelBulkClient implements Runnable {
                 jobIdsToProcess.add(jobId);
             }
 
-            if (jobIdsToProcess.isEmpty()) {
-                LOGGER.info("No jobs in the specified range.");
-                return;
-            }
-
             LOGGER.log(Level.INFO, "Requesting bulk inputs in range: {0} to {1}", new Object[]{minJobId, maxJobId});
             InputRequest inputRequest = new InputRequest(roleKey, minJobId, maxJobId, new ArrayList<>());
             channel.sendObject(inputRequest);
