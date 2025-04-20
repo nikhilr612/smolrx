@@ -111,7 +111,6 @@ public class ParallelBulkClient implements Runnable {
 
                 JobInfo info = jobInfos.get(i);
                 Object input = bulkInputs.getInputs().get(jobId);
-                if (input == null) continue;
 
                 Long programId = info.getProgramId();
                 programToJobInputs.computeIfAbsent(programId, k -> new HashMap<>()).put(jobId, input);
