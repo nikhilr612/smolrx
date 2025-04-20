@@ -1,6 +1,7 @@
 package smolrx.msg;
 
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -48,7 +49,7 @@ public final class InputRequest extends ClientMessage {
         }
         try {
             channel.sendObject(response);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | InvalidAlgorithmParameterException e) {
             Servlet.LOGGER.log(Level.WARNING, "Failed to send program inputs", e);
             throw new RXException("Failed to send program inputs", e);
         }

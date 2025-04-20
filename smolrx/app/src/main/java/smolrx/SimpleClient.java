@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -145,7 +146,7 @@ public class SimpleClient implements Runnable {
             channel.sendObject(new SignOff());
         } catch (IOException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to send object to server.", e);
-        } catch (InvalidKeyException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to read object from server.", e);
         }
 
@@ -188,7 +189,7 @@ public class SimpleClient implements Runnable {
                 | InvocationTargetException | SecurityException | NoSuchMethodException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to run jar file.", e);
             throw new RuntimeException("jar run failed", e);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to send object to server.", e);
             throw new RuntimeException("operation failed", e);
         }

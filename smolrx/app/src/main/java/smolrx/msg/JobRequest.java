@@ -1,6 +1,7 @@
 package smolrx.msg;
 
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.logging.Level;
 
@@ -63,7 +64,7 @@ public final class JobRequest extends ClientMessage {
         try {
             channel.sendObject(jobManager.listJobs(this));
             Servlet.LOGGER.log(Level.INFO, "Sent job listing to client: " + channel.toString());
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | RXException e) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | RXException | InvalidAlgorithmParameterException e) {
             Servlet.LOGGER.log(Level.WARNING, "Failed to send job listing to client: " + channel.toString(), e);
             throw new RXException("Failed to send job listing.", e);
         }
