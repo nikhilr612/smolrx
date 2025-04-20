@@ -102,10 +102,6 @@ public class ParallelBulkClient implements Runnable {
             }
 
             BulkInputs bulkInputs = (BulkInputs) inputResponse;
-            if (bulkInputs == null || bulkInputs.getInputs() == null || bulkInputs.getInputs().isEmpty()) {
-                channel.sendObject(new SignOff());
-                throw new RuntimeException("Bulk inputs are null or empty.");
-            }
             LOGGER.log(Level.INFO, "Received {0} bulk inputs.", bulkInputs.getInputs().size());
 
             // Group job IDs by Program ID
