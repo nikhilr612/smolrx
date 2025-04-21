@@ -1,6 +1,8 @@
 package smolrx.msg;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Server response containing only the program input objects for multiple jobs.
@@ -11,7 +13,7 @@ public final class BulkInputs extends ServerMessage {
     /**
      * Map Job IDs to their inputs.
      */
-    HashMap<Long, Object> inputs = new HashMap<>();
+    Map<Long, Object> inputs;
 
     /**
      * Number of failed fetches for the inputs.
@@ -19,11 +21,11 @@ public final class BulkInputs extends ServerMessage {
     int fetchFails = 0;
     
     public BulkInputs(HashMap<Long, Object> inputs, int fetchFails) {
-        this.inputs = inputs;
+        this.inputs = Collections.unmodifiableMap(inputs);
         this.fetchFails = fetchFails;
     }
 
-    public HashMap<Long, Object> getInputs() {
+    public Map<Long, Object> getInputs() {
         return inputs;
     }
 }

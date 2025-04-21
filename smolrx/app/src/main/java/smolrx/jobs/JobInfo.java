@@ -1,10 +1,13 @@
 package smolrx.jobs;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Data-class that maintains instance-specific information about a program to be executed.
@@ -129,11 +132,11 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
         return type;
     }
 
-    public HashMap<String, String> getProperties() {
-        return properties;
+    public Map<String, String> getProperties() {
+        return Collections.unmodifiableMap(properties);
     }
 
-    public HashSet<Long> getPrerequisiteJobs() {
-        return prerequisite_jobs;
+    public Set<Long> getPrerequisiteJobs() {
+        return Collections.unmodifiableSet(prerequisite_jobs);
     }
 }

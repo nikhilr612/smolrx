@@ -9,7 +9,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -169,7 +169,7 @@ public class SimpleClient implements Runnable {
         return new PushResult(job_id, this.roleKey, result);
     }
 
-    private PushResult handle_reducer_job(SecureChannel channel, File tmpf, Object programInput, String className, HashSet<Long> prerequisiteJobs, long job_id) {
+    private PushResult handle_reducer_job(SecureChannel channel, File tmpf, Object programInput, String className, Set<Long> prerequisiteJobs, long job_id) {
         var input = programInput != null ? programInput : 0;
         try {
             var reducer = JarLoader.loadJar(tmpf, className);

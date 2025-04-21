@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 
 import javax.crypto.BadPaddingException;
@@ -39,7 +41,21 @@ public final class InputRequest extends ClientMessage {
     /**
      * Additional jobs to request input for. This is a list of job IDs that are not in the range of jobid_start and jobid_end.
      */
-    ArrayList<Long> additional_jobs;
+    List<Long> additional_jobs;
+
+    /**
+     * Constructor for InputRequest.
+     * @param roleKey The role key of the client, required to request inputs.
+     * @param jobid_start The start of the range of job IDs to request input for.
+     * @param jobid_end The end of the range of job IDs to request input for. 
+     * @param additional_jobs A list of additional job IDs to request input for. This is a list of job IDs that are not in the range of jobid_start and jobid_end.
+     */
+    public InputRequest( String roleKey, long jobid_start, long jobid_end, ArrayList<Long> additional_jobs) {
+        this.jobid_start = jobid_start;
+        this.jobid_end = jobid_end;
+        this.roleKey = roleKey;
+        this.additional_jobs = Collections.unmodifiableList(additional_jobs);
+    }
 
     @Override
     public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
@@ -78,7 +94,7 @@ public final class InputRequest extends ClientMessage {
         return roleKey;
     }
 
-    public ArrayList<Long> getAdditionalJobs() {
+    public List<Long> getAdditionalJobs() {
         return additional_jobs;
     }
 }
