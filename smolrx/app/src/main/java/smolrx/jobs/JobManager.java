@@ -11,6 +11,7 @@ import smolrx.RXException;
 import smolrx.msg.BulkInputs;
 import smolrx.msg.BulkPush;
 import smolrx.msg.InputRequest;
+import smolrx.msg.InspectBlock;
 import smolrx.msg.InspectResult;
 import smolrx.msg.JarRequest;
 import smolrx.msg.JobRequest;
@@ -60,6 +61,11 @@ public class JobManager {
      * Maximum number of results that can be pushed at once.
      */
     int bulkPushLimit;
+
+    /**
+     * Maximum number of results that can be fetched at once.
+     */
+    int bulkInspLimit;
 
     public boolean admitsAnySlogger() {
         return admitAnySlogger;
@@ -186,14 +192,27 @@ public class JobManager {
         }
     }
 
-    public void validateInspection(InspectResult inspectResult) throws RXException {
-        if (this.suitableJobType(inspectResult.getRoleKey()) != JobType.COLLECT) 
+    public void _validateInspectionInner(long jobId, long parentJobId, JobType suitableType) throws RXException {
+        if (suitableType != JobType.COLLECT) 
             throw new RXException("Client ill-suited to the job.");
-        if (!this.jobInfo.containsKey(inspectResult.getParentJobId()))
-            throw new RXException("No pending collect job with id: " + inspectResult.getParentJobId());
-        var pJobInfo = this.jobInfo.get(inspectResult.getParentJobId());
-        if (!pJobInfo.prerequisite_jobs.contains(inspectResult.getJobId()))
-            throw new RXException("Cannot inspect results of job with id: " + inspectResult.getJobId());
+        if (!this.jobInfo.containsKey(parentJobId))
+            throw new RXException("No pending collect job with id: " + parentJobId);
+        var pJobInfo = this.jobInfo.get(parentJobId);
+        if (!pJobInfo.prerequisite_jobs.contains(jobId))
+            throw new RXException("Cannot inspect results of job with id: " + jobId);
+    }
+
+    public void validateInspection(InspectResult inspectResult) throws RXException {
+        var suitableType = this.suitableJobType(inspectResult.getRoleKey());
+        _validateInspectionInner(inspectResult.getJobId(), inspectResult.getParentJobId(), suitableType);
+    }
+
+    public int validateBlockInspection(InspectBlock inspectBlock) throws RXException {
+        int fails = 0;
+        if (inspectBlock.getSize() > this.bulkInspLimit) {
+            throw new RXException("Bulk inspection exceeds limit of " + this.bulkInspLimit);
+        }
+        return fails;   
     }
 
     public BulkInputs getJobInputs(InputRequest inputRequest) throws RXException {

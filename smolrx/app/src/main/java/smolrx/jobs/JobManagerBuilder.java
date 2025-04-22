@@ -15,6 +15,7 @@ public class JobManagerBuilder {
     private boolean forceRedundance = false;
     private int bulkReqLimit = 100;
     private int bulkPushLimit = 100;
+    private int bulkInspLimit = 100;
 
     /**
      * Set the limit for bulk requests.
@@ -23,6 +24,16 @@ public class JobManagerBuilder {
      */
     public JobManagerBuilder setBulkReqLimit(int limit) {
         this.bulkReqLimit = limit;
+        return this;
+    }
+
+    /**
+     * Set the limit for bulk inspection.
+     * @param limit The maximum number of job results to request in bulk.
+     * @return The current instance of JobManagerBuilder for method chaining.
+     */
+    public JobManagerBuilder setBulkInspimit(int limit) {
+        this.bulkInspLimit = limit;
         return this;
     }
 

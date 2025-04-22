@@ -32,12 +32,12 @@ public class App {
 
         // Add reducers
         for (int i = 0; i < 10; i++) {
-            var jb = JobBuilder.newInstance(1000+i, 1, JobType.COLLECT);
+            var jb = JobBuilder.newInstance(1000+i+1, 1, JobType.COLLECT);
             for (int j = 1; j <= 100; j++) {
                 jb.addPrerequisiteJob(100*i+j);
             }
-            var job = jb.setProperty("Xclass", "bfcarm.Count").build();
-            jmBuilder.addJob(1000+i, job);
+            var job = jb.setProperty("Xclass", "bfcarm.Count").relax().build();
+            jmBuilder.addJob(1000+i+1, job);
         }
 
         return jmBuilder.build();

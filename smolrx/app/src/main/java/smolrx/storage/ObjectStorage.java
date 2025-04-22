@@ -1,8 +1,12 @@
 package smolrx.storage;
 
 import java.io.IOException;
+import java.util.HashMap;
 
+import smolrx.RXException;
 import smolrx.msg.BulkPush;
+import smolrx.msg.BulkResults;
+import smolrx.msg.InspectBlock;
 import smolrx.msg.InspectResult;
 import smolrx.msg.PushResult;
 
@@ -40,5 +44,35 @@ public abstract class ObjectStorage {
             var result = entry.getValue();
             putResult(new PushResult(jobId, bulkPush.getRoleKey(), result));
         }
+    }
+
+    public BulkResults getResultsBlock(InspectBlock blockRequest) {
+        int fetchFails = 0;
+        HashMap<Long, Object[]> blockmap = new HashMap<>();
+        var parent = blockRequest.getParentJobId();
+        var roleKey = blockRequest.getRoleKey();
+        var redLimit = blockRequest.getRedLimit();
+
+        // Let's get the range first.
+        for (long i = blockRequest.getJobRangeStart(); i < blockRequest.getJobRangeEnd(); i++) {
+            try {
+                var results = getResults(new InspectResult(i, parent, roleKey, redLimit));
+                blockmap.put(i, results);
+            } catch (ClassNotFoundException | IOException e) {
+                fetchFails += 1;
+            }
+        }
+
+        // Now for the additional jobs.
+        for (long job_id : blockRequest.getAdditionalJobs()) {
+            try {
+                var results = getResults(new InspectResult(job_id, parent, roleKey, redLimit));
+                blockmap.put(job_id, results);
+            } catch (ClassNotFoundException | IOException e) {
+                fetchFails += 1;
+            }
+        }
+
+        return new BulkResults(blockmap, fetchFails);
     }
 }
