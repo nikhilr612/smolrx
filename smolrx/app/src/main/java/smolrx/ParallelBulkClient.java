@@ -10,12 +10,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import smolrx.jobs.JobInfo;
+import smolrx.jobs.JobType;
 import smolrx.msg.BulkInputs;
 import smolrx.msg.BulkPush;
 import smolrx.msg.InputRequest;
@@ -38,21 +41,22 @@ public class ParallelBulkClient implements Runnable {
     private final int minPriority;
     private final String roleKey;
 
-    public ParallelBulkClient(String hostName, int serverPort, int minPriority,  int maxJobIds, String roleKey) {
+    public ParallelBulkClient(String hostName, int serverPort, int minPriority, int maxJobIds, String roleKey) {
         this.hostName = hostName;
         this.serverPort = serverPort;
-		this.minJobId = null;
-		this.maxJobId = null;
+        this.minJobId = null;
+        this.maxJobId = null;
         this.minPriority = minPriority;
         this.maxJobIds = maxJobIds;
         this.roleKey = roleKey;
     }
 
     @Override
+    @SuppressWarnings("LoggerStringConcat")
     public void run() {
         minJobId = Long.MAX_VALUE;
         maxJobId = Long.MIN_VALUE;
-        ExecutorService executor = Executors.newFixedThreadPool(MAX_CONCURRENT_JOBS);
+        JobType jobType = null;
         try (Socket socket = new Socket(hostName, serverPort)) {
             SecureChannel channel = SecureChannel.openServerChannel(socket);
             Object config = channel.readObject();
@@ -70,25 +74,24 @@ public class ParallelBulkClient implements Runnable {
             }
 
             Joblisting jobListing = (Joblisting) jobListingResp;
-            if (jobListing == null || jobListing.getJobIDs() == null || jobListing.getJobIDs().isEmpty()) {
+            if (jobListing == null || jobListing.getJobIDs().isEmpty()) {
+                channel.sendObject(new SignOff());
+                channel.close();
                 throw new RuntimeException("Job listing is null or empty.");
             }
 
-            List<Long> jobIdsToProcess = new ArrayList<>();
-            for (int i = 0; i < jobListing.getJobIDs().size(); i++) {
-                Long jobId = jobListing.getJobIDs().get(i);
-                if (jobId == null) continue;
+            List<Long> jobIdsToProcess = jobListing.getJobIDs();
+            for (long jobId : jobIdsToProcess) {
                 if (jobId < minJobId) {
                     minJobId = jobId;
                 }
                 if (jobId > maxJobId) {
                     maxJobId = jobId;
                 }
-                jobIdsToProcess.add(jobId);
             }
 
             LOGGER.log(Level.INFO, "Requesting bulk inputs in range: {0} to {1}", new Object[]{minJobId, maxJobId});
-            InputRequest inputRequest = new InputRequest(roleKey, minJobId, maxJobId, new ArrayList<>());
+            InputRequest inputRequest = new InputRequest(roleKey, minJobId, maxJobId + 1, new ArrayList<>());
             channel.sendObject(inputRequest);
             Object inputResponse = channel.readObject();
 
@@ -97,6 +100,7 @@ public class ParallelBulkClient implements Runnable {
             }
 
             BulkInputs bulkInputs = (BulkInputs) inputResponse;
+            Objects.requireNonNull(bulkInputs, "BulkInputs must not be null");
             LOGGER.log(Level.INFO, "Received {0} bulk inputs.", bulkInputs.getInputs().size());
 
             // Group job IDs by Program ID
@@ -105,6 +109,7 @@ public class ParallelBulkClient implements Runnable {
 
             List<Long> jobIds = jobListing.getJobIDs();
             List<JobInfo> jobInfos = jobListing.getJobInfos();
+            jobType = jobInfos.get(0).getType(); // Assuming all jobs have the same type
             for (int i = 0; i < jobIds.size(); i++) {
                 Long jobId = jobIds.get(i);
                 if (jobId < minJobId || jobId > maxJobId) continue;
@@ -126,67 +131,85 @@ public class ParallelBulkClient implements Runnable {
                 File tmpf = File.createTempFile("smolrx", ".jar");
                 tmpf.deleteOnExit();
                 FileOutputStream fos = new FileOutputStream(tmpf);
-                var temp = channel.readObject();
+                var programInput = channel.readObject();
                 channel.readStream(fos);
                 fos.close();
                 LOGGER.log(Level.INFO, "Downloaded JAR for program ID {0}", programId);
-                
+                if (programInput instanceof Termination progterm) {
+                    throw new RuntimeException("Server terminated session: " + progterm.getCause());
+                }
+                LOGGER.info("Received program input: " + programInput);
+
                 String className = jobsForProgram.keySet().stream()
-                .map(jobIdToInfo::get)
-                .filter(info -> info != null)
-                .map(info -> info.getProperties().getOrDefault("Xclass", "Main"))
-                .findFirst().orElse("Main");
+                        .map(jobIdToInfo::get)
+                        .filter(info -> info != null)
+                        .map(info -> info.getProperties().getOrDefault("Xclass", "Main"))
+                        .findFirst().orElse("Main");
                 LOGGER.log(Level.INFO, "Loading jar file: {0} with class: {1}", new Object[]{tmpf.getAbsolutePath(), className});
-                
+
                 // print the entire jar file contents for debugging purposes without adding functions in other classses and doing it here.
-                try (java.util.jar.JarFile jarFile = new java.util.jar.JarFile(tmpf)) {
+                try (JarFile jarFile = new JarFile(tmpf)) {
                     LOGGER.info("Contents of the JAR file:");
                     jarFile.stream().forEach(jarEntry -> {
                         String entryType = jarEntry.isDirectory() ? "Directory" : "File";
                         long entrySize = jarEntry.getSize();
-                        LOGGER.info(String.format("Entry: %s | Type: %s | Size: %d bytes", jarEntry.getName(), entryType, entrySize));
+                        LOGGER.fine(String.format("Entry: %s | Type: %s | Size: %d bytes", jarEntry.getName(), entryType, entrySize));
                     });
                 } catch (IOException e) {
                     LOGGER.log(Level.SEVERE, "Failed to read JAR file contents: " + tmpf.getAbsolutePath(), e);
                 }
-                // To verify that the jar file is loaded correctly, print the entire jar file contents.
-                
-                for (Map.Entry<Long, Object> jobEntry : jobsForProgram.entrySet()) {
-                    long jobId = jobEntry.getKey();
-                    Object input = jobEntry.getValue();
 
-                    executor.submit(() -> {
-                        try {
-                            Object output = handle_slog_job(tmpf, input, className, jobId);
-                            synchronized (channel) {
-                                results.put(jobId, output);
-                                LOGGER.log(Level.INFO, "Pushed result for job ID: {0}", jobId);
-                            }
-                        } catch (IOException e) {
-                            LOGGER.log(Level.SEVERE, "Failed to process job " + jobId, e);
-                        }
-                    });
-                    
+                // Process jobs only if roleKey is SLOG
+                if (jobType == JobType.SLOG) {
+                    results = processJobsForProgram(tmpf, className, jobsForProgram);
                 }
-                // Wait for all tasks to finish before sending the results
-                executor.shutdown();
-                while (!executor.isTerminated()) {
-                    // Wait for all tasks to finish
-                }
-                BulkPush bulkPush = new BulkPush(results);
-                LOGGER.info(results.toString());
+                BulkPush bulkPush = new BulkPush(results, roleKey);
                 channel.sendObject(bulkPush);
-                LOGGER.info("Sent bulk results to server.");
-                channel.sendObject(new SignOff());
+                // print results for debugging purposes without adding functions in other classes and doing it here.
+                LOGGER.info("BulkPush results: " + results.toString());
+                results.clear(); // Clear the results for the next program ID
             }
-            
+            channel.sendObject(new SignOff());
+            try {
+                channel.close();
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "Failed to close channel to server", e);
+            }
+
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Error during socket connection", e);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error during bulk processing", e);
-        } finally {
-            executor.shutdown();
         }
+    }
+
+    private HashMap<Long, Object> processJobsForProgram(File tmpf, String className, 
+                                     Map<Long, Object> jobsForProgram) {
+        
+    ExecutorService executor = Executors.newFixedThreadPool(MAX_CONCURRENT_JOBS);
+    HashMap<Long, Object> results = new HashMap<>();
+    for (Map.Entry<Long, Object> jobEntry : jobsForProgram.entrySet()) {
+            long jobId = jobEntry.getKey();
+            Object input = jobEntry.getValue();
+
+            executor.submit(() -> {
+                try {
+                    Object output = handle_slog_job(tmpf, input, className, jobId);
+                    synchronized (results) {
+                        results.put(jobId, output);
+                        LOGGER.log(Level.INFO, "Pushed result for job ID: {0}", jobId);
+                    }
+                } catch (IOException e) {
+                    LOGGER.log(Level.SEVERE, "Failed to process job " + jobId, e);
+                }
+            });
+        }
+        executor.shutdown();
+                while (!executor.isTerminated()) {
+                    // Wait for all tasks for the current job group to finish
+                }
+        executor.shutdown();
+        return results;
     }
 
     private Object handle_slog_job(File tmpf, Object programInput, String className, long job_id) throws IOException {

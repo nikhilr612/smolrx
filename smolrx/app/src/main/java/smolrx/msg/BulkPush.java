@@ -35,7 +35,8 @@ public final class BulkPush extends ClientMessage {
         this.results.put(jobId, result);
     }
 
-    public BulkPush(HashMap<Long, Object> results) {
+    public BulkPush(HashMap<Long, Object> results, String roleKey) {
+        this.roleKey = roleKey;
         if (this.results == null) {
             this.results = new HashMap<>();
         }

@@ -111,7 +111,9 @@ public class SimpleClient implements Runnable {
             SimpleClient.LOGGER.info("Jar file requested. Waiting for jar file.");
 
             var programInput = channel.readObject();
-
+            if(programInput instanceof Termination) {
+                throw new RuntimeException("Server terminated session: " + ((Termination) programInput).getCause());
+            }
             SimpleClient.LOGGER.info("Received program input: " + programInput + " . Creating temporary file.");
 
             var tmpf = File.createTempFile("smolrx", ".jar");

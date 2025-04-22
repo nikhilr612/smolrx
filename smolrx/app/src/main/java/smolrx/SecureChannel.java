@@ -40,8 +40,8 @@ public class SecureChannel implements Closeable {
     private static final int KEYSIZE_B = 256;
     private static final String ALGORITHM = "RSA"; // Ideally "X25519". RSA for now.
     private static final String SYM_ALGORITHM = "AES";
-    private static final String ALGORITHM_TRANSFORMATION = "RSA/ECB/OAEPWithSHA-1AndMGF1Padding";
-    private static final String SYM_ALGORIHTM_TRANSFORMATION = "AES/GCM/PKCS5Padding";
+    private static final String ALGORITHM_TRANSFORMATION = "RSA/ECB/PKCS1Padding";
+    private static final String SYM_ALGORIHTM_TRANSFORMATION = "AES/ECB/PKCS5Padding"; 
     private static final int BUFFER_SIZE = 1024; // < 32767
 
     private Cipher symCipher; // TODO: Compare re-initialization vs two ciphers.

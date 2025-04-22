@@ -1,12 +1,10 @@
 package smolrx.msg;
 
-import java.io.Serializable;
-
 /**
  * Data-class for server-side configuration details that should be known to the client.
  */
 public final class ProtocolConfig extends ServerMessage {
-    private static long serialVersionUID = 9876543231L;
+    private static final long serialVersionUID = 9876543231L;
 
     int bulkRequestLimit;
     int bulkPushLimit;

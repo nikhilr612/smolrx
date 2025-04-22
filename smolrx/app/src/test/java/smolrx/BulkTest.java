@@ -11,36 +11,31 @@ import smolrx.storage.FileStorage;
 
 public class BulkTest {
     private static JobManager setupJobs() {
-        // TODO: Serialize JobManager
         var jmBuilder = new JobManagerBuilder()
             .allowAnySlogger()
             .setBulkPushLimit(100)
             .setBulkReqLimit(100)
-            .withKey("slog-key", JobType.SLOG)
-            .withKey("collector-key", JobType.COLLECT)
+            .withKey("private", JobType.COLLECT)
             .addJar(1, "./testjars/bfcarm.jar");
 
-        // Create 1000 SLOG jobs
+        // Add mappers.
         for (int i = 1; i <= 1000; i++) {
-            jmBuilder.addJob(i, new JobBuilder(i, 1, JobType.SLOG)
-                .setJobData(i)
-                .setRedundancyCount(2)
+            var job = new JobBuilder(i, 1, JobType.SLOG)
+                .setJobData(i) // input is the number to test
+                .setRedundancyCount(1)
                 .setProperty("Xclass", "bfcarm.Test")
-                .relax()
-                .build());
+                .build();
+            jmBuilder.addJob(i, job);
         }
 
-        // Create 10 COLLECT jobs each depending on 100 SLOG jobs
+        // Add reducers
         for (int i = 0; i < 10; i++) {
-            var collectJobId = 1000 + i;
-            var builder = new JobBuilder(collectJobId, 1, JobType.COLLECT)
-                .setProperty("Xclass", "bfcarm.Count");
-            
+            var jb = new JobBuilder(1000+i+1, 1, JobType.COLLECT);
             for (int j = 1; j <= 100; j++) {
-                builder.addPrerequisiteJob(i * 100 + j);
+                jb.relax().addPrerequisiteJob(100*i+j);
             }
-            
-            jmBuilder.addJob(collectJobId, builder.build());
+            var job = jb.setProperty("Xclass", "bfcarm.Count").build();
+            jmBuilder.addJob(1000+i+1, job);
         }
 
         return jmBuilder.build();
@@ -62,7 +57,8 @@ public class BulkTest {
             case "client" -> startWorkerClient();
             case "collector" -> startCollectorClient();
             case "bulk-client" -> startBulkClient();
-            case "test" -> startBullshitting();
+            case "bulk-collector" -> startBulkCollector();
+            case "test" -> startTest();
             case "reset" -> {
                 File dir = new File("./jobs-storage/");
                 try {
@@ -88,23 +84,29 @@ public class BulkTest {
         }
     }
 
+    private static void startBulkCollector() {
+        new Thread(new ParallelClient("localhost", 6444, 1000, 10, "private")).start();
+        System.out.println("Started bulk collector client with COLLECT role");
+    }
+
     private static void startWorkerClient() {
         new Thread(new SimpleClient("localhost", 6444, 0, "slog-key")).start();
         System.out.println("Started worker client with SLOG role");
     }
 
     private static void startCollectorClient() {
-        // new Thread(new CollectorTest("localhost", 6444, 0, "collector-key")).start();
+        new Thread(new SimpleClient("localhost", 6444, 1000, "private")).start();
         System.out.println("Started collector client with COLLECT role");
     }
     private static void startBulkClient(){
-        new Thread(new ParallelBulkClient("localhost", 6444, 0, 100, "slog-key")).start();
+        new Thread(new ParallelClient("localhost", 6444, 0, 100, "slog-key")).start();
     }
-    private static void startBullshitting() {
-        for (int i = 0; i < 100; i++) {
-            new Thread(new SimpleClient("localhost", 6444, 0, "slog-key")).start();
+    private static void startTest() {
+        for (int i = 0; i < 10; i++) {
+            ParallelClient parallelClient = new ParallelClient("localhost", 6444, 0, 100, "slog-key");
+            parallelClient.run();
         }
-    // new Thread(new CollectorTest("localhost", 6444, 0, "collector-key")).start();   
-        System.out.println("Started 100 worker clients with SLOG role and 1 collector clients with COLLECT role");
+            new Thread(new ParallelClient("localhost", 6444, 1000, 10, "private")).start();
+            System.out.println("Started 10 worker clients with SLOG role and 1 collector clients with COLLECT role");
     }
 }
