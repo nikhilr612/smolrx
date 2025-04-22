@@ -2,6 +2,7 @@ package smolrx;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
@@ -39,7 +40,7 @@ public class Servlet implements Runnable {
      */
     private ObjectStorage sObjectStorage;
 
-    public static Logger LOGGER = Logger.getLogger("smolrx-servlet");
+    public static final Logger LOGGER = Logger.getLogger("smolrx-servlet");
 
     /**
      * Create a new Servlet to handle connection from a client.
@@ -87,7 +88,7 @@ public class Servlet implements Runnable {
                 this.channel.sendObject(e.intoTerminationMessage());
             }
             // --
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | InvalidAlgorithmParameterException e) {
             Servlet.LOGGER.log(Level.WARNING, "Failed to send object message.", e);
         } catch (ClassNotFoundException e) {
             Servlet.LOGGER.log(Level.WARNING, "Received unknown object from " + this.channel, e);

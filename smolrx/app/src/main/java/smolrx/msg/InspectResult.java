@@ -1,6 +1,7 @@
 package smolrx.msg;
 
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 
 import javax.crypto.BadPaddingException;
@@ -63,7 +64,7 @@ public final class InspectResult extends ClientMessage {
         try {
             var results = objectStorage.getResults(this);
             channel.sendObject(results);
-        } catch (ClassNotFoundException | IOException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (ClassNotFoundException | IOException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
             throw new RXException("Failed to fetch and send results from object storage", e);
         }
     }

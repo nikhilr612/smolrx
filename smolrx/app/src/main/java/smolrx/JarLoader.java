@@ -12,6 +12,8 @@ import java.util.function.Function;
  */
 public class JarLoader {
 
+    // TODO: Re-implement with `doPrivileged`.
+
     /**
      * Instantiate an object of the specified class from the Jar, and cast it to Function<Object,Object>.
      * @param file The jar flie to laod the class from.

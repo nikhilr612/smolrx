@@ -32,7 +32,7 @@ public class Server extends Thread {
     /**
      * Logger for servers.
      */
-    public static Logger LOGGER = Logger.getLogger("smolrx-server");
+    public static final Logger LOGGER = Logger.getLogger("smolrx-server");
 
     /**
      * Create a new SmolRX Server with specified port and backlog. Listen on all addresses.

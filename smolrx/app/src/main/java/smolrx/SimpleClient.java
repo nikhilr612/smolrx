@@ -5,10 +5,11 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -147,7 +148,7 @@ public class SimpleClient implements Runnable {
             channel.sendObject(new SignOff());
         } catch (IOException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to send object to server.", e);
-        } catch (InvalidKeyException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | ClassNotFoundException | IllegalBlockSizeException | BadPaddingException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to read object from server.", e);
         }
 
@@ -170,7 +171,7 @@ public class SimpleClient implements Runnable {
         return new PushResult(job_id, this.roleKey, result);
     }
 
-    private PushResult handle_reducer_job(SecureChannel channel, File tmpf, Object programInput, String className, HashSet<Long> prerequisiteJobs, long job_id) {
+    private PushResult handle_reducer_job(SecureChannel channel, File tmpf, Object programInput, String className, Set<Long> prerequisiteJobs, long job_id) {
         var input = programInput != null ? programInput : 0;
         try {
             var reducer = JarLoader.loadJar(tmpf, className);
@@ -190,7 +191,7 @@ public class SimpleClient implements Runnable {
                 | InvocationTargetException | SecurityException | NoSuchMethodException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to run jar file.", e);
             throw new RuntimeException("jar run failed", e);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
             SimpleClient.LOGGER.log(Level.SEVERE, "Failed to send object to server.", e);
             throw new RuntimeException("operation failed", e);
         }

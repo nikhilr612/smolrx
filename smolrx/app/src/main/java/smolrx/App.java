@@ -22,7 +22,7 @@ public class App {
 
         // Add mappers.
         for (int i = 1; i <= 1000; i++) {
-            var job = new JobBuilder(i, 1, JobType.SLOG)
+            var job = JobBuilder.newInstance(i, 1, JobType.SLOG)
                 .setJobData(i) // input is the number to test
                 .setRedundancyCount(1)
                 .setProperty("Xclass", "bfcarm.Test")
@@ -32,7 +32,7 @@ public class App {
 
         // Add reducers
         for (int i = 0; i < 10; i++) {
-            var jb = new JobBuilder(1000+i, 1, JobType.COLLECT);
+            var jb = JobBuilder.newInstance(1000+i, 1, JobType.COLLECT);
             for (int j = 1; j <= 100; j++) {
                 jb.addPrerequisiteJob(100*i+j);
             }
@@ -47,7 +47,7 @@ public class App {
         System.out.println(args[0]);
         if (args[0].equals("server")) {
             try {
-                FileStorage fStorage = new FileStorage("./testdir/");
+                FileStorage fStorage = FileStorage.create("./testdir/");
                 Server s = new Server(6444, 5, setupJobs(), fStorage);
                 s.start();
             } catch (IOException e) {

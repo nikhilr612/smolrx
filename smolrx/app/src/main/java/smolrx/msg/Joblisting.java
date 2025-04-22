@@ -1,6 +1,8 @@
 package smolrx.msg;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import smolrx.jobs.JobInfo;
@@ -10,9 +12,9 @@ public final class Joblisting extends ServerMessage {
 
     private static final long serialVersionUID = 5432123456789L;
 
-    ArrayList<Long> jobIDs;
-    ArrayList<JobInfo> jobInfos;
-    ArrayList<JobMetadata> jobMeta;
+    List<Long> jobIDs;
+    List<JobInfo> jobInfos;
+    List<JobMetadata> jobMeta;
 
     /**
      * Create a new job listing with the specified jobs and their meta data.
@@ -21,9 +23,9 @@ public final class Joblisting extends ServerMessage {
      * @param meta
      */
     public Joblisting(ArrayList<Long> jobIDs, ArrayList<JobInfo> jobInfos, ArrayList<JobMetadata> meta) {
-        this.jobIDs = jobIDs;
-        this.jobInfos = jobInfos;
-        this.jobMeta = meta;
+        this.jobIDs = Collections.unmodifiableList(jobIDs);
+        this.jobInfos = Collections.unmodifiableList(jobInfos);
+        this.jobMeta = Collections.unmodifiableList(meta);
     }
 
     /**
@@ -32,20 +34,20 @@ public final class Joblisting extends ServerMessage {
      * @param jobInfos
      */
     public Joblisting(ArrayList<Long> jobIDs, ArrayList<JobInfo> jobInfos) {
-        this.jobIDs = jobIDs;
-        this.jobInfos = jobInfos;
+        this.jobIDs = Collections.unmodifiableList(jobIDs);
+        this.jobInfos = Collections.unmodifiableList(jobInfos);
         this.jobMeta = null;
     }
 
-    public ArrayList<Long> getJobIDs() {
+    public List<Long> getJobIDs() {
         return jobIDs;
     }
 
-    public ArrayList<JobInfo> getJobInfos() {
+    public List<JobInfo> getJobInfos() {
         return jobInfos;
     }
 
-    public Optional<ArrayList<JobMetadata>> getJobMeta() {
+    public Optional<List<JobMetadata>> getJobMeta() {
         return jobMeta == null ? Optional.empty() : Optional.of(jobMeta);
     }
 

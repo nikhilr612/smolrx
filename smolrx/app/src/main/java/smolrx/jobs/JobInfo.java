@@ -1,9 +1,13 @@
 package smolrx.jobs;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Data-class that maintains instance-specific information about a program to be executed.
@@ -94,6 +98,32 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
         return 0;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        JobInfo jobInfo = (JobInfo) obj;
+        return programId == jobInfo.programId 
+            && type == jobInfo.type 
+            && priority == jobInfo.priority
+            && redundancy_count == jobInfo.redundancy_count
+            && relaxed == jobInfo.relaxed
+            && properties.equals(jobInfo.properties)
+            && prerequisite_jobs.equals(jobInfo.prerequisite_jobs)
+            && (link == null ? jobInfo.link == null : link.equals(jobInfo.link))
+            && (jobData == null ? jobInfo.jobData == null : jobData.equals(jobInfo.jobData));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+            programId, type, priority, 
+            jobData, redundancy_count, 
+            properties, prerequisite_jobs, 
+            relaxed, link
+        );
+    }
+
     public Optional<String> getLink() {
         return link == null ? Optional.empty() : Optional.of(link);
     }
@@ -102,14 +132,18 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
         return type;
     }
 
-    public HashMap<String, String> getProperties() {
-        return properties;
+    public Map<String, String> getProperties() {
+        return Collections.unmodifiableMap(properties);
     }
     public long getProgramId() {
         return this.programId;
     }
 
-    public HashSet<Long> getPrerequisiteJobs() {
-        return prerequisite_jobs;
+    public Set<Long> getPrerequisiteJobs() {
+        return Collections.unmodifiableSet(prerequisite_jobs);
+    }
+
+    public long getProgramId() {
+        return programId;
     }
 }

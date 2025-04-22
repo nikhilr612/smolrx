@@ -3,6 +3,7 @@ package smolrx.msg;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.logging.Level;
 
@@ -65,7 +66,7 @@ public final class JarRequest extends ClientMessage {
         // Send program input first.
         try {
             channel.sendObject(programInput);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | InvalidAlgorithmParameterException e) {
             Servlet.LOGGER.log(Level.WARNING, "Failed to send program input", e);
             throw new RXException("Failed to send program input", e);
         }
@@ -79,7 +80,7 @@ public final class JarRequest extends ClientMessage {
         } catch (FileNotFoundException e) {
             Servlet.LOGGER.log(Level.SEVERE, "Jar file not found: " + jarPath, e);
             throw new RXException("Could not find local Jar file", e);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e1) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | InvalidAlgorithmParameterException e1) {
             Servlet.LOGGER.log(Level.SEVERE, "Failed to send jar file: " + jarPath, e1);
             throw new RXException("Failed to stream file.", e1);
         }
