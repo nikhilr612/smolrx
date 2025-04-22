@@ -2,6 +2,8 @@ package smolrx;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import smolrx.jobs.JobBuilder;
 import smolrx.jobs.JobManager;
@@ -20,7 +22,7 @@ public class BulkTest {
 
         // Add mappers.
         for (int i = 1; i <= 1000; i++) {
-            var job = new JobBuilder(i, 1, JobType.SLOG)
+            var job = JobBuilder.newInstance(i, 1, JobType.SLOG)
                 .setJobData(i) // input is the number to test
                 .setRedundancyCount(1)
                 .setProperty("Xclass", "bfcarm.Test")
@@ -30,7 +32,7 @@ public class BulkTest {
 
         // Add reducers
         for (int i = 0; i < 10; i++) {
-            var jb = new JobBuilder(1000+i+1, 1, JobType.COLLECT);
+            var jb = JobBuilder.newInstance(1000+i+1, 1, JobType.COLLECT);
             for (int j = 1; j <= 100; j++) {
                 jb.relax().addPrerequisiteJob(100*i+j);
             }
@@ -72,15 +74,16 @@ public class BulkTest {
         }
     }
 
-    @SuppressWarnings("CallToPrintStackTrace")
     private static void startServer() {
         try {
-            FileStorage fStorage = new FileStorage("./jobs-storage/");
+            FileStorage fStorage = FileStorage.create("./jobs-storage/");
             Server server = new Server(6444, 10, setupJobs(), fStorage);
             server.start();
         } catch (IOException e) {
             System.err.println("Failed to start server:");
-            e.printStackTrace();
+            Logger
+                .getLogger(BulkTest.class.getName())
+                .log(Level.SEVERE, "Error starting server", e);
         }
     }
 

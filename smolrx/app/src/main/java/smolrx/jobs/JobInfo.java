@@ -142,8 +142,4 @@ public class JobInfo implements Serializable, Comparable<JobInfo> {
     public Set<Long> getPrerequisiteJobs() {
         return Collections.unmodifiableSet(prerequisite_jobs);
     }
-
-    public long getProgramId() {
-        return programId;
-    }
 }

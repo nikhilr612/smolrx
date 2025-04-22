@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,14 +95,14 @@ public class ParallelClient implements Runnable {
         }
     }
 
-    private void initializeConnection(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private void initializeConnection(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         Object config = channel.readObject();
         if (!(config instanceof ProtocolConfig)) {
             throw new RuntimeException("Invalid protocol config object received.");
         }
     }
 
-    private Joblisting requestJobListing(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private Joblisting requestJobListing(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         LOGGER.info("Requesting job listing...");
         channel.sendObject(new JobRequest(minPriority, maxJobIds, roleKey));
         
@@ -161,7 +162,7 @@ public class ParallelClient implements Runnable {
         }
     }
 
-    private BulkInputs requestBulkInputs(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private BulkInputs requestBulkInputs(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         LOGGER.log(Level.INFO, "Requesting bulk inputs in range: {0} to {1}", new Object[]{minJobId, maxJobId});
         channel.sendObject(new InputRequest(roleKey, minJobId, maxJobId + 1, new ArrayList<>()));
         
@@ -233,7 +234,7 @@ public class ParallelClient implements Runnable {
 
     // ===== COLLECTOR-specific methods =====
     private Map<Long, File> downloadProgramJars(SecureChannel channel, Joblisting jobListing) 
-            throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+            throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         Map<Long, File> programJarMap = new HashMap<>();
         for (JobInfo jobInfo : jobListing.getJobInfos()) {
             Long programId = jobInfo.getProgramId();
@@ -330,7 +331,7 @@ public class ParallelClient implements Runnable {
         return jobInfoMap;
     }
 
-    private File downloadJarFile(SecureChannel channel, Long programId) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private File downloadJarFile(SecureChannel channel, Long programId) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         LOGGER.log(Level.INFO, "Downloading JAR for program ID {0}", programId);
         channel.sendObject(new JarRequest(minJobId, roleKey));
         
@@ -366,12 +367,12 @@ public class ParallelClient implements Runnable {
         }
     }
 
-    private void sendResults(SecureChannel channel, HashMap<Long, Object> results) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private void sendResults(SecureChannel channel, HashMap<Long, Object> results) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         channel.sendObject(new BulkPush(results, roleKey));
         LOGGER.log(Level.INFO, "Sent results for {0} jobs", results.size());
     }
 
-    private void signOff(SecureChannel channel) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private void signOff(SecureChannel channel) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         channel.sendObject(new SignOff());
         LOGGER.info("Session completed successfully");
     }

@@ -97,20 +97,20 @@ public class JobManager {
         var it = sortedMap.entrySet().iterator();
         var jobIds = new ArrayList<Long>();
         var jobInfos = new ArrayList<JobInfo>();
-        ArrayList<JobMetadata> jobMetas = null;
+        ArrayList<JobMetadata> jobMetaS = null;
 
         var suitableType = this.suitableJobType(request.getRoleKey());
 
         if ((request.getRoleKey() != null) && (suitableType == JobType.AUDIT)) {
-            jobMetas = new ArrayList<>();
+            jobMetaS = new ArrayList<>();
             while (it.hasNext() && jobIds.size() < request.getLimit()) {
                 var t = it.next();
                 jobIds.add(t.getKey());
                 jobInfos.add(t.getValue().maskedClone());
-                jobMetas.add(this.jobMetas.get(t.getKey()));
+                jobMetaS.add(this.jobMetas.get(t.getKey()));
             }
 
-            return new Joblisting(jobIds, jobInfos, jobMetas);
+            return new Joblisting(jobIds, jobInfos, jobMetaS);
         }
         
         while (it.hasNext() && jobIds.size() < request.getLimit()) {

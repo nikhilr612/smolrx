@@ -91,8 +91,8 @@ public class SimpleClient implements Runnable {
             channel.sendObject(jobreq);
 
             var readObj = channel.readObject();
-            if (readObj instanceof Termination) {
-                throw new RuntimeException("Server terminated session: " + ((Termination) readObj).getCause());
+            if (readObj instanceof Termination t) {
+                throw new RuntimeException("Server terminated session: " + t.getCause());
             }
 
             var jobl = (Joblisting)readObj;
