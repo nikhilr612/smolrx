@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.function.Function;
+import java.util.logging.Level;
 
 /**
  * Class to deal with loading and executing Jars from files at Runtime.
@@ -29,10 +30,10 @@ public class JarLoader {
      * @throws ClassCastException If the specified class does not implement Function<Object,Object>
      */
     public static Function<Object,Object> loadJar(File file, String className) throws MalformedURLException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {
-        SimpleClient.LOGGER.info("Loading jar file: " + file.getAbsolutePath() + " with class: " + className);
+        SimpleClient.LOGGER.log(Level.INFO, "Loading jar file: {0} with class: {1}", new Object[]{file.getAbsolutePath(), className});
         URL[] urls = new URL[]{file.toURI().toURL()};
         URLClassLoader urlClassLoader = new URLClassLoader(urls, JarLoader.class.getClassLoader());
-        SimpleClient.LOGGER.info("Classloader: " + urlClassLoader.toString());
+        SimpleClient.LOGGER.log(Level.INFO, "Classloader: {0}", urlClassLoader.toString());
         var entryClass = Class.forName(className, true, urlClassLoader);
         var obj = entryClass.getConstructor().newInstance();
         var func = (Function<Object,Object>)obj; // Throws class cast exception.

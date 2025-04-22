@@ -69,9 +69,9 @@ public class SecureChannel implements Closeable {
         return new GCMParameterSpec(TAG_SIZE, iv); // Use 128-bit tag.
     }
 
-    private Cipher symCipher; // TODO: Compare re-initialization vs two ciphers.
-    private Socket conn;
-    private SecretKey secretKey;
+    private final Cipher symCipher; // TODO: Compare re-initialization vs two ciphers.
+    private final Socket conn;
+    private final SecretKey secretKey;
 
     private SecureChannel(Cipher symCipher, Socket conn, SecretKey secretKey) throws IOException {
         this.conn = conn;
@@ -161,7 +161,7 @@ public class SecureChannel implements Closeable {
         DeflaterInputStream deflateis = new DeflaterInputStream(inputStream);
         var buffer = new byte[SecureChannel.BUFFER_SIZE];
         var lenBuffer = ByteBuffer.allocate(2);
-        int len = 0;
+        int len;
 
         var iv = new byte[SecureChannel.IV_SIZE];
         

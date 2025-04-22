@@ -1,7 +1,5 @@
 package smolrx.msg;
 
-import java.io.Serializable;
-
 /**
  * Data-class for server-side configuration details that should be known to the client.
  */

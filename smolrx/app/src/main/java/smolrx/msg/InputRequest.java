@@ -61,7 +61,7 @@ public final class InputRequest extends ClientMessage {
     public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
         var response = jobManager.getJobInputs(this);
         if (response.fetchFails > 0) {
-            Servlet.LOGGER.log(Level.WARNING, "Client requested " + this.getSize() + " inputs, but " + response.fetchFails + " failed to fetch. Channel=" + channel.toString());
+            Servlet.LOGGER.log(Level.WARNING, "Client requested {0} inputs, but {1} failed to fetch. Channel={2}", new Object[]{this.getSize(), response.fetchFails, channel.toString()});
         }
         try {
             channel.sendObject(response);

@@ -63,7 +63,7 @@ public final class JobRequest extends ClientMessage {
     public void handle(SecureChannel channel, JobManager jobManager, ObjectStorage objectStorage) throws RXException {
         try {
             channel.sendObject(jobManager.listJobs(this));
-            Servlet.LOGGER.log(Level.INFO, "Sent job listing to client: " + channel.toString());
+            Servlet.LOGGER.log(Level.INFO, "Sent job listing to client: {0}", channel.toString());
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException | RXException | InvalidAlgorithmParameterException e) {
             Servlet.LOGGER.log(Level.WARNING, "Failed to send job listing to client: " + channel.toString(), e);
             throw new RXException("Failed to send job listing.", e);

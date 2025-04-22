@@ -91,8 +91,8 @@ public class SimpleClient implements Runnable {
             channel.sendObject(jobreq);
 
             var readObj = channel.readObject();
-            if (readObj instanceof Termination) {
-                throw new RuntimeException("Server terminated session: " + ((Termination) readObj).getCause());
+            if (readObj instanceof Termination t) {
+                throw new RuntimeException("Server terminated session: " + t.getCause());
             }
 
             var jobl = (Joblisting)readObj;
@@ -112,7 +112,9 @@ public class SimpleClient implements Runnable {
             SimpleClient.LOGGER.info("Jar file requested. Waiting for jar file.");
 
             var programInput = channel.readObject();
-
+            if(programInput instanceof Termination) {
+                throw new RuntimeException("Server terminated session: " + ((Termination) programInput).getCause());
+            }
             SimpleClient.LOGGER.info("Received program input: " + programInput + " . Creating temporary file.");
 
             var tmpf = File.createTempFile("smolrx", ".jar");

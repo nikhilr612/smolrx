@@ -6,5 +6,8 @@ build
 
 test.jar
 testdir/*
+jobs-storage/*
 *.bat
 output.txt
+*.class
+../.vscode/*
