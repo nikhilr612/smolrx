@@ -10,11 +10,13 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.zip.DeflaterInputStream;
@@ -28,6 +30,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -40,9 +43,31 @@ public class SecureChannel implements Closeable {
     private static final int KEYSIZE_B = 256;
     private static final String ALGORITHM = "RSA"; // Ideally "X25519". RSA for now.
     private static final String SYM_ALGORITHM = "AES";
-    private static final String ALGORITHM_TRANSFORMATION = "RSA/ECB/PKCS1Padding";
-    private static final String SYM_ALGORIHTM_TRANSFORMATION = "AES/ECB/PKCS5Padding"; 
-    private static final int BUFFER_SIZE = 1024; // < 32767
+    private static final String ALGORITHM_TRANSFORMATION = "RSA/ECB/OAEPWithSHA-1AndMGF1Padding";
+    private static final String SYM_ALGORIHTM_TRANSFORMATION = "AES/GCM/NoPadding";
+    private static final int BUFFER_SIZE = 4096; // < 32767
+
+    private static final int IV_SIZE = 12; // 96-bits; optimal for GCM.
+    private static final int TAG_SIZE = 128; // 128-bits; optimal for GCM.
+
+    /**
+     * Generate a random IV for the cipher.
+     * @param iv The byte array to be filled with the IV.
+     * @return The algorithm parameter spec for the cipher.
+     */
+    private static AlgorithmParameterSpec generateSpec(byte[] iv) {
+        new SecureRandom().nextBytes(iv); // randomize IV.
+        return new GCMParameterSpec(TAG_SIZE, iv); // Use 128-bit tag.
+    }
+
+    /**
+     * Recover the algorithm parameter spec from the provided IV.
+     * @param iv The IV to be used for the spec..
+     * @return The algorithm parameter spec for the cipher.
+     */
+    private static AlgorithmParameterSpec recoverSpec(byte[] iv) {
+        return new GCMParameterSpec(TAG_SIZE, iv); // Use 128-bit tag.
+    }
 
     private Cipher symCipher; // TODO: Compare re-initialization vs two ciphers.
     private Socket conn;
@@ -61,8 +86,9 @@ public class SecureChannel implements Closeable {
      * @throws InvalidKeyException If Cipher re-initialization fails.
      * @throws IllegalBlockSizeException If Cipher operation fails.
      * @throws BadPaddingException If Cipher operation fails.
+     * @throws InvalidAlgorithmParameterException If Cipher re-initialization with nonce fails. 
      */
-    public void sendObject(Object o) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public void sendObject(Object o) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         var baos = new ByteArrayOutputStream();
         var defalteos = new DeflaterOutputStream(baos);
         var oos = new ObjectOutputStream(defalteos);
@@ -71,9 +97,12 @@ public class SecureChannel implements Closeable {
         oos.close();
         defalteos.close();
         
-        this.symCipher.init(Cipher.ENCRYPT_MODE, this.secretKey);
+        var iv = new byte[SecureChannel.IV_SIZE];
+        this.symCipher.init(Cipher.ENCRYPT_MODE, this.secretKey, SecureChannel.generateSpec(iv));
+
         var encData = this.symCipher.doFinal(baos.toByteArray());
 
+        conn.getOutputStream().write(iv); // Send IV first.
         conn.getOutputStream().write(ByteBuffer.allocate(4).putInt(encData.length).array());
         conn.getOutputStream().write(encData);
         conn.getOutputStream().flush();
@@ -87,16 +116,26 @@ public class SecureChannel implements Closeable {
      * @throws InvalidKeyException If Cipher re-initialization fails.
      * @throws IllegalBlockSizeException If Cipher operaiton fails.
      * @throws BadPaddingException If Cipher operation fails.
+     * @throws InvalidAlgorithmParameterException If Cipher initialization with nonce fails.
      */
-    public Object readObject() throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public Object readObject() throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException{
+        var iv = new byte[SecureChannel.IV_SIZE]; // Read IV first.
+        if (conn.getInputStream().read(iv) != SecureChannel.IV_SIZE) {
+            throw new IOException("Failed to read IV.");
+        }
+        
         var intBytes = new byte[4];
-        conn.getInputStream().read(intBytes);
+        if (conn.getInputStream().read(intBytes) != 4) {
+            throw new IOException("Failed to read length of incoming data.");
+        }
         var length = ByteBuffer.wrap(intBytes).getInt();
 
         var encDataBuf = new byte[length];
-        conn.getInputStream().read(encDataBuf);
+        if (conn.getInputStream().read(encDataBuf) != length) {
+            throw new IOException("Failed to read object data.");
+        }
 
-        this.symCipher.init(Cipher.DECRYPT_MODE, this.secretKey);
+        this.symCipher.init(Cipher.DECRYPT_MODE, this.secretKey, SecureChannel.recoverSpec(iv));
         var dataBuf = this.symCipher.doFinal(encDataBuf);
 
         var bais = new ByteArrayInputStream(dataBuf);
@@ -116,21 +155,27 @@ public class SecureChannel implements Closeable {
      * @throws InvalidKeyException If Cipher re-initialization failed.
      * @throws IllegalBlockSizeException If Cipher operation failed.
      * @throws BadPaddingException If Cipher operation failed.
+     * @throws InvalidAlgorithmParameterException If Cipher re-initialization with nonce failed. 
      */
-    public void sendStream(InputStream inputStream) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public void sendStream(InputStream inputStream) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         DeflaterInputStream deflateis = new DeflaterInputStream(inputStream);
         var buffer = new byte[SecureChannel.BUFFER_SIZE];
         var lenBuffer = ByteBuffer.allocate(2);
         int len = 0;
 
-        this.symCipher.init(Cipher.ENCRYPT_MODE, this.secretKey);
+        var iv = new byte[SecureChannel.IV_SIZE];
         
         while ((len = deflateis.read(buffer)) != -1) {
+            // Cipher needs re-initialization for each chunk of data. Cannot use single IV for whole transmission.
+            this.symCipher.init(Cipher.ENCRYPT_MODE, this.secretKey, SecureChannel.generateSpec(iv));
+
             var encData = this.symCipher.doFinal(buffer, 0, len);
 
             lenBuffer.clear();
             lenBuffer.putShort((short) encData.length);
             this.conn.getOutputStream().write(lenBuffer.array());
+
+            this.conn.getOutputStream().write(iv);
             this.conn.getOutputStream().write(encData);
         }
 
@@ -147,23 +192,39 @@ public class SecureChannel implements Closeable {
      * @throws InvalidKeyException If Cipher re-initialization failed.
      * @throws IllegalBlockSizeException If Cipher operation failed.
      * @throws BadPaddingException If Cipher operation failed.
+     * @throws InvalidAlgorithmParameterException If Cipher re-initialization with nonce failed. 
      */
-    public void readStream(OutputStream outputStream) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public void readStream(OutputStream outputStream) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         InflaterOutputStream inflateos = new InflaterOutputStream(outputStream);
         var encDataBuf = new byte[SecureChannel.BUFFER_SIZE * 2]; // Over-allocate to avoid dealing with padding shenanigans.
         var lenBuffer = ByteBuffer.allocate(2);
-        this.conn.getInputStream().read(lenBuffer.array());
-        int encLen = lenBuffer.getShort();
+        
+        if (this.conn.getInputStream().read(lenBuffer.array()) != 2) {
+            throw new IOException("Failed to read length of incoming data.");
+        }
 
-        this.symCipher.init(Cipher.DECRYPT_MODE, this.secretKey);
+        int encLen = lenBuffer.getShort();
             
         while (encLen != 0) {
-            this.conn.getInputStream().read(encDataBuf, 0, encLen);
+            var iv = new byte[SecureChannel.IV_SIZE]; // Read IV first.
+            if (this.conn.getInputStream().read(iv) != SecureChannel.IV_SIZE) {
+                throw new IOException("Failed to read IV.");
+            }
+
+            this.symCipher.init(Cipher.DECRYPT_MODE, this.secretKey, SecureChannel.recoverSpec(iv));
+
+            if (this.conn.getInputStream().read(encDataBuf, 0, encLen) != encLen) {
+                throw new IOException("Failed to read stream data.");
+            }
+
             var buffer = this.symCipher.doFinal(encDataBuf, 0, encLen);
             inflateos.write(buffer);
 
             lenBuffer.clear();
-            this.conn.getInputStream().read(lenBuffer.array());
+            if (this.conn.getInputStream().read(lenBuffer.array()) != 2) {
+                throw new IOException("Failed to read length of incoming data.");
+            }
+
             encLen = lenBuffer.getShort();
         }
     }
@@ -189,11 +250,15 @@ public class SecureChannel implements Closeable {
         conn.getOutputStream().write(ByteBuffer.allocate(4).putInt(publicKeyData.length).array());
         conn.getOutputStream().write(publicKeyData);
 
-        var lenBuf = new byte[4]; conn.getInputStream().read(lenBuf);
+        var lenBuf = new byte[4]; 
+        if(conn.getInputStream().read(lenBuf) != 4) 
+            throw new IOException("Failed to read length of incoming data. Failed to negotiate channel.");
         int len = ByteBuffer.wrap(lenBuf).getInt();
 
         var clientRandomDataEnc = new byte[len];
-        conn.getInputStream().read(clientRandomDataEnc);
+        if (conn.getInputStream().read(clientRandomDataEnc) != len) {
+            throw new IOException("Failed to negotiate channel security.");
+        }
 
         Cipher cipher = Cipher.getInstance(SecureChannel.ALGORITHM_TRANSFORMATION);
         cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
@@ -219,10 +284,14 @@ public class SecureChannel implements Closeable {
      */
     public static SecureChannel openServerChannel(Socket conn) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         var keyBuf = new byte[4];
-        conn.getInputStream().read(keyBuf);
+        if (conn.getInputStream().read(keyBuf) != 4) throw 
+            new IOException("Failed to negotiate channel security, could not read key length.");
+
         var keyLen = ByteBuffer.wrap(keyBuf).getInt();
+
         var publicKeyData = new byte[keyLen];
-        conn.getInputStream().read(publicKeyData);
+        if (conn.getInputStream().read(publicKeyData) != keyLen) throw 
+            new IOException("Failed to negotiate channel security, could not read key.");
 
         var publicKey = KeyFactory.getInstance(SecureChannel.ALGORITHM).generatePublic(new X509EncodedKeySpec(publicKeyData));
         var cipher = Cipher.getInstance(SecureChannel.ALGORITHM_TRANSFORMATION);
