@@ -3,7 +3,6 @@ package smolrx.storage;
 import java.io.IOException;
 import java.util.HashMap;
 
-import smolrx.RXException;
 import smolrx.msg.BulkPush;
 import smolrx.msg.BulkResults;
 import smolrx.msg.InspectBlock;

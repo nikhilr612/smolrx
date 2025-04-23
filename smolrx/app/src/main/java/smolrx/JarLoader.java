@@ -36,6 +36,7 @@ public class JarLoader {
         SimpleClient.LOGGER.log(Level.INFO, "Classloader: {0}", urlClassLoader.toString());
         var entryClass = Class.forName(className, true, urlClassLoader);
         var obj = entryClass.getConstructor().newInstance();
+        @SuppressWarnings("unchecked")
         var func = (Function<Object,Object>)obj; // Throws class cast exception.
         return func;
     }

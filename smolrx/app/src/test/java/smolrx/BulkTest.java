@@ -53,14 +53,16 @@ public class BulkTest {
                                  collector - Start collector client""");
             return;
         }
+        
+        String hostName = args.length > 1? args[1] : "localhost";
 
         switch (args[0].toLowerCase()) {
             case "server" -> startServer();
-            case "client" -> startWorkerClient();
-            case "collector" -> startCollectorClient();
-            case "bulk-client" -> startBulkClient();
-            case "bulk-collector" -> startBulkCollector();
-            case "test" -> startTest();
+            case "client" -> startWorkerClient(hostName);
+            case "collector" -> startCollectorClient(hostName);
+            case "bulk-client" -> startBulkClient(hostName);
+            case "bulk-collector" -> startBulkCollector(hostName);
+            case "test" -> startTest(hostName);
             case "reset" -> {
                 File dir = new File("./jobs-storage/");
                 try {
@@ -87,29 +89,29 @@ public class BulkTest {
         }
     }
 
-    private static void startBulkCollector() {
-        new Thread(new ParallelClient("localhost", 6444, 1000, 10, "private")).start();
+    private static void startBulkCollector(String hostName) {
+        new Thread(new ParallelClient(hostName, 6444, 1000, 10, "private")).start();
         System.out.println("Started bulk collector client with COLLECT role");
     }
 
-    private static void startWorkerClient() {
-        new Thread(new SimpleClient("localhost", 6444, 0, "slog-key")).start();
+    private static void startWorkerClient(String hostName) {
+        new Thread(new SimpleClient(hostName, 6444, 0, "slog-key")).start();
         System.out.println("Started worker client with SLOG role");
     }
 
-    private static void startCollectorClient() {
-        new Thread(new SimpleClient("localhost", 6444, 1000, "private")).start();
+    private static void startCollectorClient(String hostName) {
+        new Thread(new SimpleClient(hostName, 6444, 1000, "private")).start();
         System.out.println("Started collector client with COLLECT role");
     }
-    private static void startBulkClient(){
-        new Thread(new ParallelClient("localhost", 6444, 0, 100, "slog-key")).start();
+    private static void startBulkClient(String hostName){
+        new Thread(new ParallelClient(hostName, 6444, 0, 100, "slog-key")).start();
     }
-    private static void startTest() {
+    private static void startTest(String hostName) {
         for (int i = 0; i < 10; i++) {
-            ParallelClient parallelClient = new ParallelClient("localhost", 6444, 0, 100, "slog-key");
+            ParallelClient parallelClient = new ParallelClient(hostName, 6444, 0, 100, "slog-key");
             parallelClient.run();
         }
-            new Thread(new ParallelClient("localhost", 6444, 1000, 10, "private")).start();
+            new Thread(new ParallelClient(hostName, 6444, 1000, 10, "private")).start();
             System.out.println("Started 10 worker clients with SLOG role and 1 collector clients with COLLECT role");
     }
 }

@@ -215,18 +215,22 @@ public class ParallelClient implements Runnable {
         HashMap<Long, Object> results = new HashMap<>();
         int submittedTasks = 0;
         
+        Function<Object, Object> fobj;
+        try {
+            fobj = JarLoader.loadJar(jarFile, className);
+        } catch (MalformedURLException | ClassNotFoundException | InstantiationException | IllegalAccessException
+                | InvocationTargetException | SecurityException | NoSuchMethodException e) {
+            LOGGER.log(Level.SEVERE, "Failed to process SLOG job ", e);
+            throw new RuntimeException("Couldn't load function from jar", e);
+        }
+
         // Submit all tasks
         for (Map.Entry<Long, Object> entry : jobs.entrySet()) {
             final long jobId = entry.getKey();
             final Object input = entry.getValue();
-            
+
             completionService.submit(() -> {
-                try {
-                    return new Object[]{jobId, JarLoader.loadJar(jarFile, className).apply(input)};
-                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException | MalformedURLException e) {
-                    LOGGER.log(Level.SEVERE, "Failed to process SLOG job " + jobId, e);
-                    return new Object[]{jobId, null};
-                }
+                return new Object[]{jobId, fobj.apply(input)};
             });
             submittedTasks++;
         }
@@ -293,11 +297,20 @@ public class ParallelClient implements Runnable {
                 i += bulkInspectLimit;
             }
             
+            Function<Object, Object> fobj;
+            try {
+                fobj = JarLoader.loadJar(jarFile, className);
+            } catch (MalformedURLException | ClassNotFoundException | InstantiationException | IllegalAccessException
+                    | InvocationTargetException | SecurityException | NoSuchMethodException e) {
+                LOGGER.log(Level.SEVERE, "Failed to load function from Jar", e);
+                throw new RuntimeException(e);
+            }
+
             for (long slogJobId : inputResults.keySet()) {
                 completionService.submit(() -> {
                     try {
                         final Object slogJobResult = inputResults.get(slogJobId)[0];
-                        Object result = handleCollectorJob(channel, jarFile, className, jobInfo, slogJobResult, jobId);
+                        Object result = handleCollectorJob(channel, fobj, jobInfo, slogJobResult, jobId);
                         return new Object[]{jobId, result};
                     } catch (Exception e) {
                         LOGGER.log(Level.SEVERE, "Failed to process collector job " + slogJobId, e);
@@ -325,11 +338,10 @@ public class ParallelClient implements Runnable {
         return results;
     }
 
-    private PushResult handleCollectorJob(SecureChannel channel, File jarFile, String className,
+    private PushResult handleCollectorJob(SecureChannel channel, Function<Object, Object> reducer,
                                         JobInfo jobInfo, Object result, long jobId) throws Exception {
         Object input = 0;
         try {
-            var reducer = JarLoader.loadJar(jarFile, className);
             for (Long dep : jobInfo.getPrerequisiteJobs()) {
                 
                 input = processDependency(channel, reducer, input, result, dep);
