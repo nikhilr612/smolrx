@@ -45,20 +45,24 @@ public class App {
 
     public static void main(String[] args) {
         System.out.println(args[0]);
-        if (args[0].equals("server")) {
-            try {
-                FileStorage fStorage = FileStorage.create("./testdir/");
-                Server s = new Server(6444, 5, setupJobs(), fStorage);
-                s.start();
-            } catch (IOException e) {
-                e.printStackTrace();
+        switch (args[0]) {
+            case "server" -> {
+                try {
+                    FileStorage fStorage = FileStorage.create("./testdir/");
+                    Server s = new Server(6444, 5, setupJobs(), fStorage);
+                    s.start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        } else if (args[0].equals("client")) {
-            SimpleClient c = new SimpleClient("localhost", 6444, 0, args[1]);
-            c.run();
-        } else {
-            TimidClient tc = new TimidClient("localhost", 6444, 0, "public");
-            tc.run();
+            case "client" -> {
+                SimpleClient c = new SimpleClient("localhost", 6444, 0, args[1]);
+                c.run();
+            }
+            default -> {
+                TimidClient tc = new TimidClient("localhost", 6444, 0, "public");
+                tc.run();
+            }
         }
     }
 }

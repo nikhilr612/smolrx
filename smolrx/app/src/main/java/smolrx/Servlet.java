@@ -23,7 +23,7 @@ public class Servlet implements Runnable {
     /**
      * Connection socket for the client handled by this servlet.
      */
-    private Socket conn; // Un-tracked by Servlet. Managed by channel.
+    private final Socket conn; // Un-tracked by Servlet. Managed by channel.
 
     /**
      * Secure channel to client.
@@ -33,12 +33,12 @@ public class Servlet implements Runnable {
     /**
      * Reference to server's job manager.
      */
-    private JobManager sJobManager;
+    private final JobManager sJobManager;
 
     /**
      * Reference to server's object storage.
      */
-    private ObjectStorage sObjectStorage;
+    private final ObjectStorage sObjectStorage;
 
     public static final Logger LOGGER = Logger.getLogger("smolrx-servlet");
 
@@ -66,7 +66,7 @@ public class Servlet implements Runnable {
             return;
         }
 
-        Servlet.LOGGER.info("Channel opened for client " + this.conn.toString());
+        Servlet.LOGGER.log(Level.INFO, "Channel opened for client {0}", this.conn.toString());
 
         // For now, if something goes wrong here; bee-line to servlet end.
         // Try-catch gore occurs because RXExceptions can re-throw channel errors.
@@ -97,8 +97,7 @@ public class Servlet implements Runnable {
         try {
             this.channel.close();
         } catch (IOException e) {
-            Servlet.LOGGER.warning("Failed to close channel to client");
-            e.printStackTrace();
+            Servlet.LOGGER.log(Level.WARNING, "Failed to close channel to client");
         }
     }
 }

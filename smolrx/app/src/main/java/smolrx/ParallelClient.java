@@ -9,10 +9,12 @@ import java.net.Socket;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -31,8 +33,9 @@ import smolrx.jobs.JobInfo;
 import smolrx.jobs.JobType;
 import smolrx.msg.BulkInputs;
 import smolrx.msg.BulkPush;
+import smolrx.msg.BulkResults;
 import smolrx.msg.InputRequest;
-import smolrx.msg.InspectResult;
+import smolrx.msg.InspectBlock;
 import smolrx.msg.JarRequest;
 import smolrx.msg.JobRequest;
 import smolrx.msg.Joblisting;
@@ -52,6 +55,7 @@ public class ParallelClient implements Runnable {
     private Long maxJobId;
     private final int minPriority;
     private final String roleKey;
+    private ProtocolConfig config;
 
     public ParallelClient(String hostName, int serverPort, int minPriority, int maxJobIds, String roleKey) {
         this.hostName = hostName;
@@ -72,7 +76,7 @@ public class ParallelClient implements Runnable {
 
         try (Socket socket = new Socket(hostName, serverPort)) {
             SecureChannel channel = SecureChannel.openServerChannel(socket);
-            initializeConnection(channel);
+            config = initializeConnection(channel);
             
             Joblisting jobListing = requestJobListing(channel);
             JobType jobType = determineJobType(jobListing);
@@ -95,11 +99,12 @@ public class ParallelClient implements Runnable {
         }
     }
 
-    private void initializeConnection(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
-        Object config = channel.readObject();
-        if (!(config instanceof ProtocolConfig)) {
+    private ProtocolConfig initializeConnection(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+        Object configuration = channel.readObject();
+        if (!(configuration instanceof ProtocolConfig)) {
             throw new RuntimeException("Invalid protocol config object received.");
         }
+        return (ProtocolConfig) configuration;
     }
 
     private Joblisting requestJobListing(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
@@ -123,10 +128,12 @@ public class ParallelClient implements Runnable {
     private void processSlogJobs(SecureChannel channel, CompletionService<Object> completionService, 
                                Joblisting jobListing) throws Exception {
         determineJobIdRange(jobListing);
+        if (maxJobId - minJobId > config.getBulkPushLimit()) {
+            throw new RuntimeException("Recieved too many jobs: " + (maxJobId - minJobId) + " > " + config.getBulkPushLimit());
+        }
         BulkInputs bulkInputs = requestBulkInputs(channel);
         Map<Long, Map<Long, Object>> programToJobs = groupJobsByProgram(jobListing, bulkInputs);
         Map<Long, JobInfo> jobInfoMap = createJobInfoMap(jobListing);
-        
         for (Map.Entry<Long, Map<Long, Object>> entry : programToJobs.entrySet()) {
             Long programId = entry.getKey();
             Map<Long, Object> jobsForProgram = entry.getValue();
@@ -247,26 +254,48 @@ public class ParallelClient implements Runnable {
 
     private HashMap<Long, Object> processCollectorJobs(CompletionService<Object> completionService,
                                                      SecureChannel channel, Map<Long, JobInfo> jobInfoMap,
-                                                     Map<Long, File> programJarMap) {
+                                                     Map<Long, File> programJarMap) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         HashMap<Long, Object> results = new HashMap<>();
         int submittedTasks = 0;
-        
         // Submit all collector jobs
         for (Map.Entry<Long, JobInfo> entry : jobInfoMap.entrySet()) {
             final long jobId = entry.getKey();
             final JobInfo jobInfo = entry.getValue();
             final File jarFile = programJarMap.get(jobInfo.getProgramId());
             final String className = jobInfo.getProperties().getOrDefault("Xclass", "Main");
-            
-            completionService.submit(() -> {
-                try {
-                    Object result = handleCollectorJob(channel, jarFile, className, jobInfo, jobId);
-                    return new Object[]{jobId, result};
-                } catch (Exception e) {
-                    LOGGER.log(Level.SEVERE, "Failed to process collector job " + jobId, e);
-                    return new Object[]{jobId, null};
+            final Set<Long> jobIds = jobInfo.getPrerequisiteJobs();
+            Map<Long, Object[]> inputResults = new HashMap<>();
+            long minId = Collections.min(jobIds);
+            long maxId = Collections.max(jobIds);
+            long bulkRequestLimit = config.getBulkRequestLimit();
+            int i = 0;
+            while(minId + i < maxId) {
+                InspectBlock inspectBlock = new InspectBlock(1, minId + i, (minId + i < maxId - bulkRequestLimit ? minId + i + bulkRequestLimit : maxId), new ArrayList<>(), roleKey);
+                LOGGER.log(Level.INFO, "Requesting block of results for jobId {0}", jobId);
+                channel.sendObject(inspectBlock);
+                Object response = channel.readObject();
+                if (response instanceof Termination term) {
+                    throw new RuntimeException("Server terminated session: " + term.getCause());
                 }
-            });
+                BulkResults bulkResults = (BulkResults) response;
+                Objects.requireNonNull(bulkResults, "BulkResults must not be null");
+                Map<Long, Object[]> recievedResults = bulkResults.getResults();
+                inputResults.putAll(recievedResults);
+                i += bulkRequestLimit;
+            }
+            
+            for (long slogJobId : inputResults.keySet()) {
+                completionService.submit(() -> {
+                    try {
+                        final Object slogJobResult = inputResults.get(slogJobId)[0];
+                        Object result = handleCollectorJob(channel, jarFile, className, jobInfo, slogJobResult, jobId);
+                        return new Object[]{jobId, result};
+                    } catch (Exception e) {
+                        LOGGER.log(Level.SEVERE, "Failed to process collector job " + slogJobId, e);
+                        return new Object[]{jobId, null};
+                    }
+                });
+            }
             submittedTasks++;
         }
         
@@ -288,12 +317,13 @@ public class ParallelClient implements Runnable {
     }
 
     private PushResult handleCollectorJob(SecureChannel channel, File jarFile, String className,
-                                        JobInfo jobInfo, long jobId) throws Exception {
+                                        JobInfo jobInfo, Object result, long jobId) throws Exception {
         Object input = 0;
         try {
             var reducer = JarLoader.loadJar(jarFile, className);
             for (Long dep : jobInfo.getPrerequisiteJobs()) {
-                input = processDependency(channel, reducer, input, dep, jobId);
+                
+                input = processDependency(channel, reducer, input, result, dep);
             }
             return new PushResult(jobId, roleKey, input);
         } catch (IOException | ClassNotFoundException | IllegalAccessException | 
@@ -306,17 +336,10 @@ public class ParallelClient implements Runnable {
     }
 
     private Object processDependency(SecureChannel channel, Function<Object, Object> reducer, Object input,
-        Long dep, long jobId) throws Exception {
+        Object result, Long dep) throws Exception {
         synchronized (channel) {
-        channel.sendObject(new InspectResult(dep, jobId, roleKey, maxJobIds));
-        Object response = channel.readObject();
-        if (response instanceof Termination term) {
-        throw new RuntimeException("Server terminated: " + term.getCause());
-        }
-
-        Object[] resultsArr = (Object[]) response;
-        LOGGER.log(Level.FINE, "Input: {0}, Results: {1}", new Object[]{dep, resultsArr[0]});
-        Object redInput = new Object[]{input, resultsArr[0]};
+        LOGGER.log(Level.FINE, "Input: {0}, Results: {1}", new Object[]{dep, result});
+        Object redInput = new Object[]{input, result};
         return reducer.apply(redInput);
         }   
     }
