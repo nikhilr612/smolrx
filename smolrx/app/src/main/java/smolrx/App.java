@@ -1,6 +1,8 @@
 package smolrx;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import smolrx.jobs.JobBuilder;
 import smolrx.jobs.JobManager;
@@ -52,7 +54,10 @@ public class App {
                     Server s = new Server(6444, 5, setupJobs(), fStorage);
                     s.start();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.err.println("Failed to start server:");
+                    Logger
+                        .getLogger(App.class.getName())
+                        .log(Level.SEVERE, "Error starting server", e);
                 }
             }
             case "client" -> {

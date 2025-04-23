@@ -171,16 +171,25 @@ public class ParallelClient implements Runnable {
 
     private BulkInputs requestBulkInputs(SecureChannel channel) throws IOException, ClassNotFoundException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         LOGGER.log(Level.INFO, "Requesting bulk inputs in range: {0} to {1}", new Object[]{minJobId, maxJobId});
-        channel.sendObject(new InputRequest(roleKey, minJobId, maxJobId + 1, new ArrayList<>()));
-        
-        Object response = channel.readObject();
-        if (response instanceof Termination term) {
-            throw new RuntimeException("Server terminated session: " + term.getCause());
+
+        long bulkRequestLimit = config.getBulkRequestLimit();
+        long i = 0;
+        HashMap<Long, Object> inputs = new HashMap<>();
+        while(minJobId + i < maxJobId){
+            channel.sendObject(new InputRequest(roleKey, minJobId + i, (maxJobId < minJobId + i + bulkRequestLimit) ? maxJobId + 1: minJobId + i + bulkRequestLimit + 1, new ArrayList<>()));
+            
+            Object response = channel.readObject();
+            if (response instanceof Termination term) {
+                throw new RuntimeException("Server terminated session: " + term.getCause());
+            }
+            
+            BulkInputs bulkInputTemp = (BulkInputs) response;
+            Objects.requireNonNull(bulkInputTemp, "BulkInputs must not be null");
+            inputs.putAll(bulkInputTemp.getInputs());
+            LOGGER.log(Level.INFO, "Received {0} bulk inputs.", bulkInputTemp.getInputs().size());
+            i += bulkRequestLimit;
         }
-        
-        BulkInputs bulkInputs = (BulkInputs) response;
-        Objects.requireNonNull(bulkInputs, "BulkInputs must not be null");
-        LOGGER.log(Level.INFO, "Received {0} bulk inputs.", bulkInputs.getInputs().size());
+        BulkInputs bulkInputs = new BulkInputs(inputs, 2);
         return bulkInputs;
     }
 
@@ -267,10 +276,10 @@ public class ParallelClient implements Runnable {
             Map<Long, Object[]> inputResults = new HashMap<>();
             long minId = Collections.min(jobIds);
             long maxId = Collections.max(jobIds);
-            long bulkRequestLimit = config.getBulkRequestLimit();
-            int i = 0;
+            long bulkInspectLimit = config.getBulkInspectLimit();
+            long i = 0;
             while(minId + i < maxId) {
-                InspectBlock inspectBlock = new InspectBlock(1, minId + i, (minId + i < maxId - bulkRequestLimit ? minId + i + bulkRequestLimit : maxId), new ArrayList<>(), roleKey);
+                InspectBlock inspectBlock = new InspectBlock(1, minId + i, (minId + i < maxId - bulkInspectLimit ? minId + i + bulkInspectLimit : maxId), new ArrayList<>(), roleKey);
                 LOGGER.log(Level.INFO, "Requesting block of results for jobId {0}", jobId);
                 channel.sendObject(inspectBlock);
                 Object response = channel.readObject();
@@ -281,7 +290,7 @@ public class ParallelClient implements Runnable {
                 Objects.requireNonNull(bulkResults, "BulkResults must not be null");
                 Map<Long, Object[]> recievedResults = bulkResults.getResults();
                 inputResults.putAll(recievedResults);
-                i += bulkRequestLimit;
+                i += bulkInspectLimit;
             }
             
             for (long slogJobId : inputResults.keySet()) {
@@ -390,10 +399,37 @@ public class ParallelClient implements Runnable {
         }
     }
 
-    private void sendResults(SecureChannel channel, HashMap<Long, Object> results) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
-        channel.sendObject(new BulkPush(results, roleKey));
-        LOGGER.log(Level.INFO, "Sent results for {0} jobs", results.size());
+    private void sendResults(SecureChannel channel, HashMap<Long, Object> results)
+        throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+
+        if (results.isEmpty()) {
+            LOGGER.warning("No results to send.");
+            return;
+        }
+
+        long bulkPushLimit = config.getBulkPushLimit();
+        long currentStart = minJobId;
+
+        while (currentStart <= maxJobId) {
+            long currentEnd = Math.min(currentStart + bulkPushLimit - 1, maxJobId);
+
+            HashMap<Long, Object> chunk = new HashMap<>();
+            for (long jobId = currentStart; jobId <= currentEnd; jobId++) {
+                if (results.containsKey(jobId)) {
+                    chunk.put(jobId, results.get(jobId));
+                }
+            }
+
+            if (!chunk.isEmpty()) {
+                channel.sendObject(new BulkPush(chunk, roleKey));
+                LOGGER.log(Level.INFO, "Sent results for job ID range [{0} - {1}] (count: {2})",
+                        new Object[]{currentStart, currentEnd, chunk.size()});
+            }
+
+            currentStart = currentEnd + 1;
+        }
     }
+
 
     private void signOff(SecureChannel channel) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
         channel.sendObject(new SignOff());

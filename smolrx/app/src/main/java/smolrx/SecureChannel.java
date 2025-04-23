@@ -36,6 +36,8 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * Implement protocol-details pertaining to establishing a secure channel between client and servlet.
  */
+
+ @SuppressWarnings("ConvertToTryWithResources")
 public class SecureChannel implements Closeable {
 
     // TODO: Re-factor all methods to use `ChannelException` and group channel-related errors into one. This will reduce try-catch gore.
