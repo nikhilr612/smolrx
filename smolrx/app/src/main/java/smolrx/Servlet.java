@@ -74,7 +74,7 @@ public class Servlet implements Runnable {
             // -- 
             try {
                 this.channel.sendObject(
-                    new ProtocolConfig(this.sJobManager.getBulkRequestLimit(), this.sJobManager.getBulkPushLimit())
+                    new ProtocolConfig(this.sJobManager.getBulkRequestLimit(), this.sJobManager.getBulkPushLimit(), this.sJobManager.getBulkInspectLimit())
                 );
                 while (true){
                     // it MUST be a client message.

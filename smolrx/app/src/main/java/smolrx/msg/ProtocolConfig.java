@@ -8,6 +8,7 @@ public final class ProtocolConfig extends ServerMessage {
 
     int bulkRequestLimit;
     int bulkPushLimit;
+    int bulkInspLimit;
 
     public int getBulkPushLimit() {
         return bulkPushLimit;
@@ -16,10 +17,15 @@ public final class ProtocolConfig extends ServerMessage {
     public int getBulkRequestLimit() {
         return bulkRequestLimit;
     }
+
+    public int getBulkInspectLimit() {
+        return bulkInspLimit;
+    }
     
-    public ProtocolConfig(int bulkRequestLimit, int bulkPushLimit) {
+    public ProtocolConfig(int bulkRequestLimit, int bulkPushLimit, int bulkInspLimit) {
         this.bulkRequestLimit = bulkRequestLimit;
         this.bulkPushLimit = bulkPushLimit;
+        this.bulkInspLimit = bulkInspLimit; // Default to the same as bulkRequestLimit
     }
 
     @Override

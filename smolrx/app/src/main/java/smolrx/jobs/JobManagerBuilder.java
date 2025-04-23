@@ -113,6 +113,7 @@ public class JobManagerBuilder {
         manager.bulkPushLimit = this.bulkPushLimit;
         manager.admitAnySlogger = this.admitAnySlogger;
         manager.forceRedundance = this.forceRedundance;
+        manager.bulkInspLimit = this.bulkInspLimit;
         return manager;
     }
 }

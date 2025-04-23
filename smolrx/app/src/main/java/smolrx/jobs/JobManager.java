@@ -253,4 +253,8 @@ public class JobManager {
     public int getBulkPushLimit() {
         return bulkPushLimit;
     }
+
+    public int getBulkInspectLimit() {
+        return bulkInspLimit;
+    }
 }
