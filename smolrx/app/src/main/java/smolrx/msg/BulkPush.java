@@ -1,7 +1,9 @@
 package smolrx.msg;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
@@ -22,28 +24,14 @@ public final class BulkPush extends ClientMessage {
     /**
      * Map job IDs to their results.
      */
-    HashMap<Long, Object> results = new HashMap<>();
-
-    public void push(long jobId, Object result) {
-
-        if (this.results == null) {
-            this.results = new HashMap<>();
-        }
-        if (this.results.containsKey(jobId)) {
-            Servlet.LOGGER.log(Level.WARNING, "Job ID {0} already exists in the results map. Overwriting.", jobId);
-        }
-        this.results.put(jobId, result);
-    }
+    Map<Long, Object> results;
 
     public BulkPush(HashMap<Long, Object> results, String roleKey) {
         this.roleKey = roleKey;
-        if (this.results == null) {
-            this.results = new HashMap<>();
-        }
         if (results == null) {
             throw new IllegalArgumentException("Results map cannot be null.");
         }
-        this.results = results;
+        this.results = Collections.unmodifiableMap(results);
     }
 
     public Set<Entry<Long, Object>> getResults() {
