@@ -128,9 +128,6 @@ public class ParallelClient implements Runnable {
     private void processSlogJobs(SecureChannel channel, CompletionService<Object> completionService, 
                                Joblisting jobListing) throws Exception {
         determineJobIdRange(jobListing);
-        if (maxJobId - minJobId > config.getBulkPushLimit()) {
-            throw new RuntimeException("Recieved too many jobs: " + (maxJobId - minJobId) + " > " + config.getBulkPushLimit());
-        }
         BulkInputs bulkInputs = requestBulkInputs(channel);
         Map<Long, Map<Long, Object>> programToJobs = groupJobsByProgram(jobListing, bulkInputs);
         Map<Long, JobInfo> jobInfoMap = createJobInfoMap(jobListing);

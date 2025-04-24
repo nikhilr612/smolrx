@@ -53,7 +53,7 @@ public class BulkTest {
                                  collector - Start collector client""");
             return;
         }
-        
+
         String hostName = args.length > 1? args[1] : "localhost";
 
         switch (args[0].toLowerCase()) {
