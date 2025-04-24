@@ -25,6 +25,5 @@
 - Better client-side implementations.
 - Emergent scheduling.
 - More tests and benchmarks.
-- Support for QUIC 
 
 Contributions and feedback are encouraged! Feel free to submit issues or pull requests.
